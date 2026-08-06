@@ -4,6 +4,16 @@
 
 @custom-variant dark (&:is(.dark *));
 
+@theme {
+  --font-display: "Sora", ui-sans-serif, system-ui, sans-serif;
+  --font-sans: "Manrope", ui-sans-serif, system-ui, sans-serif;
+  --color-navy: oklch(0.24 0.06 262);
+  --color-navy-deep: oklch(0.17 0.05 262);
+  --color-teal: oklch(0.72 0.13 187);
+  --color-teal-deep: oklch(0.56 0.11 190);
+}
+
+
 /*
  * Design system definition.
  *
