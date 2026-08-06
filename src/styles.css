@@ -157,3 +157,42 @@
     color: var(--color-foreground);
   }
 }
+
+@utility glass-panel {
+  background: color-mix(in oklab, var(--card) 72%, transparent);
+  backdrop-filter: blur(18px);
+  border: 1px solid color-mix(in oklab, var(--color-teal) 18%, transparent);
+  box-shadow: var(--shadow-soft);
+}
+
+@utility glass-dark {
+  background: color-mix(in oklab, oklch(1 0 0) 8%, transparent);
+  backdrop-filter: blur(18px);
+  border: 1px solid color-mix(in oklab, oklch(1 0 0) 16%, transparent);
+}
+
+@utility hero-gradient {
+  background-image: var(--gradient-hero);
+}
+
+@utility teal-gradient {
+  background-image: var(--gradient-teal);
+}
+
+@utility rail-track {
+  background-image: repeating-linear-gradient(
+    90deg,
+    color-mix(in oklab, var(--color-teal) 55%, transparent) 0 14px,
+    transparent 14px 28px
+  );
+}
+
+@layer base {
+  body {
+    font-family: var(--font-sans);
+  }
+  h1, h2, h3, h4 {
+    font-family: var(--font-display);
+    letter-spacing: -0.02em;
+  }
+}
