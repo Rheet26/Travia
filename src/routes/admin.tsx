@@ -84,6 +84,8 @@ function AdminConsole() {
 
   const num = (v: string) => Math.max(0, Number(v) || 0);
 
+  if (!allowed) return <div className="min-h-screen bg-background" />;
+
   return (
     <ConsoleShell
       title="Admin console"

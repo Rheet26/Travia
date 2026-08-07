@@ -64,6 +64,8 @@ function PassengerConsole() {
     toast.success(`${booking.status} · PNR ${booking.pnr}`, { description: message });
   };
 
+  if (!allowed) return <div className="min-h-screen bg-background" />;
+
   return (
     <ConsoleShell
       title="Passenger console"
