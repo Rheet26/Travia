@@ -1,7 +1,32 @@
-import { Link } from "@tanstack/react-router";
+import { Link, useNavigate } from "@tanstack/react-router";
 import { motion } from "motion/react";
-import { TrainFront } from "lucide-react";
+import { LogOut, TrainFront } from "lucide-react";
 import type { ReactNode } from "react";
+import { useAuth } from "@/lib/railverse/auth";
+
+function AccountNav() {
+  const { user, logout } = useAuth();
+  const navigate = useNavigate();
+  if (!user) return null;
+
+  return (
+    <nav className="ml-auto flex items-center gap-2 rounded-full bg-muted p-1 pl-4 text-sm font-medium">
+      <span className="hidden text-muted-foreground sm:inline">
+        {user.name} · <span className="capitalize">{user.role}</span>
+      </span>
+      <button
+        type="button"
+        onClick={() => {
+          logout();
+          navigate({ to: "/", replace: true });
+        }}
+        className="inline-flex items-center gap-1.5 rounded-full bg-card px-4 py-1.5 text-foreground shadow-sm transition-colors hover:bg-card/80"
+      >
+        <LogOut className="size-4" /> Sign out
+      </button>
+    </nav>
+  );
+}
 
 export function BrandMark({ compact = false }: { compact?: boolean }) {
   return (
@@ -37,20 +62,7 @@ export function ConsoleShell({
       <header className="sticky top-0 z-30 border-b border-border/70 bg-background/80 backdrop-blur-xl">
         <div className="mx-auto flex max-w-6xl flex-wrap items-center gap-4 px-4 py-4 sm:px-6">
           <BrandMark />
-          <nav className="ml-auto flex items-center gap-1 rounded-full bg-muted p-1 text-sm font-medium">
-            <Link
-              to="/passenger"
-              className="rounded-full px-4 py-1.5 text-muted-foreground transition-colors data-[status=active]:bg-card data-[status=active]:text-foreground data-[status=active]:shadow-sm"
-            >
-              Passenger
-            </Link>
-            <Link
-              to="/admin"
-              className="rounded-full px-4 py-1.5 text-muted-foreground transition-colors data-[status=active]:bg-card data-[status=active]:text-foreground data-[status=active]:shadow-sm"
-            >
-              Admin
-            </Link>
-          </nav>
+          <AccountNav />
         </div>
       </header>
 

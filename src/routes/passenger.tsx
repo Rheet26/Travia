@@ -11,6 +11,7 @@ import { ConsoleShell, StatCard } from "@/components/railverse/shell";
 import { BookingModal } from "@/components/railverse/booking-modal";
 import type { BookingFormValues } from "@/components/railverse/booking-modal";
 import { useRail } from "@/lib/railverse/store";
+import { useRequireRole } from "@/lib/railverse/auth";
 import { countsFor } from "@/lib/railverse/engine";
 import type { Train } from "@/lib/railverse/types";
 
@@ -34,6 +35,7 @@ export const Route = createFileRoute("/passenger")({
 });
 
 function PassengerConsole() {
+  const allowed = useRequireRole("passenger");
   const { state, book, cancel } = useRail();
   const [query, setQuery] = useState("");
   const [selected, setSelected] = useState<Train | null>(null);
@@ -61,6 +63,8 @@ function PassengerConsole() {
     }
     toast.success(`${booking.status} · PNR ${booking.pnr}`, { description: message });
   };
+
+  if (!allowed) return <div className="min-h-screen bg-background" />;
 
   return (
     <ConsoleShell

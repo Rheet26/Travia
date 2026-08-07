@@ -10,6 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ConsoleShell, StatCard } from "@/components/railverse/shell";
 import { useRail } from "@/lib/railverse/store";
+import { useRequireRole } from "@/lib/railverse/auth";
 import { countsFor, makeTrain } from "@/lib/railverse/engine";
 import type { Train } from "@/lib/railverse/types";
 
@@ -48,6 +49,7 @@ const emptyDraft = (): Draft => ({
 });
 
 function AdminConsole() {
+  const allowed = useRequireRole("admin");
   const { state, addTrain, updateTrain, deleteTrain, reset, cancel } = useRail();
   const [draft, setDraft] = useState<Draft | null>(null);
 
@@ -81,6 +83,8 @@ function AdminConsole() {
   };
 
   const num = (v: string) => Math.max(0, Number(v) || 0);
+
+  if (!allowed) return <div className="min-h-screen bg-background" />;
 
   return (
     <ConsoleShell
