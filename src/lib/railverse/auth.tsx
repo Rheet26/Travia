@@ -1,5 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
 import type { ReactNode } from "react";
+import { useNavigate } from "@tanstack/react-router";
 
 export type Role = "passenger" | "admin";
 
@@ -104,4 +105,20 @@ export function useAuth() {
   const ctx = useContext(AuthContext);
   if (!ctx) throw new Error("useAuth must be used within AuthProvider");
   return ctx;
+}
+
+export function useRequireRole(role: Role) {
+  const { user, hydrated } = useAuth();
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    if (!hydrated) return;
+    if (!user) {
+      navigate({ to: "/auth", search: { mode: "login" }, replace: true });
+    } else if (user.role !== role) {
+      navigate({ to: user.role === "admin" ? "/admin" : "/passenger", replace: true });
+    }
+  }, [hydrated, user, role, navigate]);
+
+  return hydrated && user?.role === role;
 }
