@@ -137,8 +137,8 @@ function Landing() {
             </p>
             <div className="mt-9 flex flex-wrap gap-3">
               <Button asChild size="lg" className="teal-gradient border-0 text-navy-deep hover:opacity-90">
-                <Link to="/passenger">
-                  Passenger console <ArrowRight className="ml-1 size-4" />
+                <Link to="/auth" search={{ mode: "login" }}>
+                  Login <ArrowRight className="ml-1 size-4" />
                 </Link>
               </Button>
               <Button
@@ -147,8 +147,8 @@ function Landing() {
                 variant="outline"
                 className="border-white/30 bg-transparent text-primary-foreground hover:bg-white/10 hover:text-primary-foreground"
               >
-                <Link to="/admin">
-                  <LayoutDashboard className="mr-1 size-4" /> Admin console
+                <Link to="/auth" search={{ mode: "signup" }}>
+                  <LayoutDashboard className="mr-1 size-4" /> Sign Up
                 </Link>
               </Button>
             </div>
@@ -278,7 +278,9 @@ function Landing() {
           </p>
           <div className="mt-8 flex flex-wrap justify-center gap-3">
             <Button asChild size="lg" className="teal-gradient border-0 text-navy-deep hover:opacity-90">
-              <Link to="/passenger">Passenger console</Link>
+              <Link to="/auth" search={{ mode: "login" }}>
+                Login
+              </Link>
             </Button>
             <Button
               asChild
@@ -286,7 +288,9 @@ function Landing() {
               variant="outline"
               className="border-white/30 bg-transparent text-primary-foreground hover:bg-white/10 hover:text-primary-foreground"
             >
-              <Link to="/admin">Admin console</Link>
+              <Link to="/auth" search={{ mode: "signup" }}>
+                Sign Up
+              </Link>
             </Button>
           </div>
         </div>
