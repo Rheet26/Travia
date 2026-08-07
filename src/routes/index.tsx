@@ -95,10 +95,14 @@ function Landing() {
           <BrandMark />
           <div className="ml-auto flex items-center gap-2">
             <Button asChild variant="ghost" className="hidden sm:inline-flex">
-              <Link to="/admin">Admin console</Link>
+              <Link to="/auth" search={{ mode: "login" }}>
+                Login
+              </Link>
             </Button>
             <Button asChild>
-              <Link to="/passenger">Book a ticket</Link>
+              <Link to="/auth" search={{ mode: "signup" }}>
+                Sign Up
+              </Link>
             </Button>
           </div>
         </div>

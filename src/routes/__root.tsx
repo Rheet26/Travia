@@ -12,6 +12,7 @@ import { useEffect, type ReactNode } from "react";
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
 import { RailProvider } from "../lib/railverse/store";
+import { AuthProvider } from "../lib/railverse/auth";
 import { Toaster } from "../components/ui/sonner";
 
 
@@ -133,11 +134,13 @@ function RootComponent() {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <RailProvider>
-        {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
-        <Outlet />
-        <Toaster position="top-right" richColors />
-      </RailProvider>
+      <AuthProvider>
+        <RailProvider>
+          {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
+          <Outlet />
+          <Toaster position="top-right" richColors />
+        </RailProvider>
+      </AuthProvider>
     </QueryClientProvider>
 
   );
