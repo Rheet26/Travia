@@ -1,4 +1,5 @@
 import { auth, defineMcp } from "@lovable.dev/mcp-js";
+import type { McpDefinitionInput } from "@lovable.dev/mcp-js";
 import listTrains from "./tools/list-trains";
 import simulateBookings from "./tools/simulate-bookings";
 import reservationRules from "./tools/reservation-rules";
@@ -15,5 +16,5 @@ export default defineMcp({
     issuer: `https://${projectRef}.supabase.co/auth/v1`,
     acceptedAudiences: "authenticated",
   }),
-  tools: [listTrains, simulateBookings, reservationRules],
+  tools: [listTrains, simulateBookings, reservationRules] as McpDefinitionInput["tools"],
 });
