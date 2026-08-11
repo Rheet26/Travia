@@ -16,5 +16,5 @@ export default defineMcp({
     issuer: `https://${projectRef}.supabase.co/auth/v1`,
     acceptedAudiences: "authenticated",
   }),
-  tools: [listTrains, simulateBookings, reservationRules] as McpDefinitionInput["tools"],
+  tools: [listTrains, simulateBookings, reservationRules] as unknown as McpDefinitionInput["tools"],
 });
