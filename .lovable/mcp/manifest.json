@@ -1,0 +1,94 @@
+{
+  "version": 1,
+  "sdk_version": "0.26.2",
+  "path": "/mcp",
+  "auth": {
+    "type": "oauth",
+    "issuer": "https://clikwdoylzhjlgaffmkm.supabase.co/auth/v1",
+    "accepted_audiences": [
+      "authenticated"
+    ]
+  },
+  "mcp": {
+    "server": {
+      "name": "remix-of-railverse-modern-train-experience",
+      "version": "0.1.0",
+      "title": "Remix of RailVerse: Modern Train Experience"
+    },
+    "tools": [
+      {
+        "name": "list_trains",
+        "title": "List trains",
+        "description": "List the RailVerse timetable: train number, name, route, timings, fare, and seat/RAC/waitlist capacity.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "properties": {}
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "simulate_bookings",
+        "title": "Simulate bookings",
+        "description": "Run RailVerse's seat allocation engine for a train: books N passengers in sequence and reports each resulting status (CONFIRMED with seat and berth, RAC, or WAITLIST position).",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "properties": {
+            "trainNumber": {
+              "type": "string",
+              "description": "Train number from list_trains, e.g. 12951."
+            },
+            "passengers": {
+              "type": "integer",
+              "minimum": -9007199254740991,
+              "maximum": 9007199254740991,
+              "description": "How many passengers to book in sequence (1-50)."
+            },
+            "preference": {
+              "description": "Berth preference applied to every simulated passenger.",
+              "type": "string",
+              "enum": [
+                "Lower",
+                "Middle",
+                "Upper",
+                "No Preference"
+              ]
+            }
+          },
+          "required": [
+            "trainNumber",
+            "passengers"
+          ]
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "explain_reservation_rules",
+        "title": "Explain reservation rules",
+        "description": "Explain how RailVerse allocates seats and berths and how RAC and waitlist promotion works.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "properties": {}
+        },
+        "outputSchema": null
+      }
+    ]
+  }
+}
