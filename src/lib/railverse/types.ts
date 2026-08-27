@@ -3,6 +3,14 @@ export type BerthPreference = Berth | "No Preference";
 export type Gender = "Male" | "Female" | "Other";
 export type BookingStatus = "CONFIRMED" | "RAC" | "WAITLIST" | "CANCELLED";
 
+export interface TrainStop {
+  stationName: string;
+  arrives: string;
+  departs: string;
+  distance: number;
+  day: number;
+}
+
 export interface Train {
   id: string;
   number: string;
@@ -15,6 +23,16 @@ export interface Train {
   seats: number;
   racTotal: number;
   wlTotal: number;
+  runningDays?: string[];
+  routeStops?: TrainStop[];
+  duration?: string;
+}
+
+export interface PassengerInput {
+  passengerName: string;
+  age: number;
+  gender: Gender;
+  preference: BerthPreference;
 }
 
 export interface Booking {
@@ -30,6 +48,11 @@ export interface Booking {
   berth: Berth | null;
   queuePosition: number | null;
   fare: number;
+  journeyDate?: string;
+  fromStation?: string;
+  toStation?: string;
+  boardingTime?: string;
+  arrivalTime?: string;
   createdAt: string;
 }
 

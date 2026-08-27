@@ -49,7 +49,9 @@ function AuthForm() {
   const Icon = role === "admin" ? LayoutDashboard : UserRound;
   const title = role === "admin" ? "Admin" : "Passenger";
 
-  function handleSubmit(e: React.FormEvent) {
+  const [submitting, setSubmitting] = useState(false);
+
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!email.trim() || !password) {
       toast.error("Email and password are required.");
@@ -59,16 +61,23 @@ function AuthForm() {
       toast.error("Please enter your name.");
       return;
     }
-    const result =
-      mode === "signup"
-        ? signup(name, email, password, role)
-        : login(email, password, role);
-    if (!result.ok) {
-      toast.error(result.message);
-      return;
+    setSubmitting(true);
+    try {
+      const result =
+        mode === "signup"
+          ? await signup(name, email, password, role)
+          : await login(email, password, role);
+      if (!result.ok) {
+        toast.error(result.message);
+        return;
+      }
+      toast.success(result.message);
+      navigate({ to: role === "admin" ? "/admin" : "/passenger" });
+    } catch (err: any) {
+      toast.error(err?.message || "An error occurred during authentication.");
+    } finally {
+      setSubmitting(false);
     }
-    toast.success(result.message);
-    navigate({ to: role === "admin" ? "/admin" : "/passenger" });
   }
 
   return (
@@ -137,8 +146,12 @@ function AuthForm() {
                 placeholder="••••••••"
               />
             </div>
-            <Button type="submit" size="lg" className="w-full">
-              {mode === "signup" ? "Create account" : "Login"}
+            <Button type="submit" size="lg" className="w-full" disabled={submitting}>
+              {submitting
+                ? "Processing..."
+                : mode === "signup"
+                  ? "Create account"
+                  : "Login"}
             </Button>
           </form>
 

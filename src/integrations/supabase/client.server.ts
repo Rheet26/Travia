@@ -20,8 +20,10 @@ function createSupabaseFetch(supabaseKey: string): typeof fetch {
     }
 
     // New Supabase API keys are opaque strings, not bearer JWTs.
-    if (isNewSupabaseApiKey(supabaseKey) && headers.get('Authorization') === `Bearer ${supabaseKey}`) {
+    const authHeader = headers.get('Authorization') || headers.get('authorization');
+    if (isNewSupabaseApiKey(supabaseKey) && authHeader?.trim() === `Bearer ${supabaseKey}`) {
       headers.delete('Authorization');
+      headers.delete('authorization');
     }
 
     headers.set('apikey', supabaseKey);
@@ -30,15 +32,29 @@ function createSupabaseFetch(supabaseKey: string): typeof fetch {
 }
 
 function createSupabaseAdminClient() {
-  const SUPABASE_URL = process.env['SUPABASE_URL'];
-  const SUPABASE_SERVICE_ROLE_KEY = process.env['SUPABASE_SERVICE_ROLE_KEY'];
+  const env = typeof import.meta !== 'undefined' ? import.meta.env : undefined;
+  const procEnv = typeof process !== 'undefined' ? process.env : undefined;
+
+  const SUPABASE_URL =
+    procEnv?.['SUPABASE_URL'] ||
+    procEnv?.['VITE_SUPABASE_URL'] ||
+    env?.['VITE_SUPABASE_URL'];
+
+  const SUPABASE_SERVICE_ROLE_KEY =
+    procEnv?.['SUPABASE_SERVICE_ROLE_KEY'] ||
+    procEnv?.['SUPABASE_PUBLISHABLE_KEY'] ||
+    procEnv?.['SUPABASE_ANON_KEY'] ||
+    procEnv?.['VITE_SUPABASE_PUBLISHABLE_KEY'] ||
+    procEnv?.['VITE_SUPABASE_ANON_KEY'] ||
+    env?.['VITE_SUPABASE_PUBLISHABLE_KEY'] ||
+    env?.['VITE_SUPABASE_ANON_KEY'];
 
   if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) {
     const missing = [
-      ...(!SUPABASE_URL ? ['SUPABASE_URL'] : []),
-      ...(!SUPABASE_SERVICE_ROLE_KEY ? ['SUPABASE_SERVICE_ROLE_KEY'] : []),
+      ...(!SUPABASE_URL ? ['SUPABASE_URL / VITE_SUPABASE_URL'] : []),
+      ...(!SUPABASE_SERVICE_ROLE_KEY ? ['SUPABASE_SERVICE_ROLE_KEY / SUPABASE_PUBLISHABLE_KEY'] : []),
     ];
-    const message = `Missing Supabase environment variable(s): ${missing.join(', ')}. Connect Supabase in Lovable Cloud.`;
+    const message = `Missing Supabase environment variable(s): ${missing.join(', ')}. Ensure .env or .env.local is properly configured.`;
     console.error(`[Supabase] ${message}`);
     throw new Error(message);
   }

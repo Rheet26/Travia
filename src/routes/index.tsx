@@ -1,32 +1,43 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { motion, useInView } from "motion/react";
-import { useEffect, useRef, useState } from "react";
+import { motion } from "motion/react";
+import { useState } from "react";
 import {
   ArrowRight,
   Gauge,
-  LayoutDashboard,
   ListOrdered,
   ShieldCheck,
   Ticket,
-  TrainFront,
+  Search,
+  MapPin,
+  Calendar,
+  Compass,
+  CheckCircle2,
+  LayoutDashboard,
+  Navigation,
+  Sparkles,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
 import { BrandMark } from "@/components/railverse/shell";
+import { KAGGLE_TRAIN_DATASET } from "@/lib/railverse/dataset";
+import { AnimatedTrainBackdrop } from "@/components/railverse/animated-train-backdrop";
+import { FloatingDestinationLabels } from "@/components/railverse/floating-destination-labels";
 
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "RailVerse — Modern Railway Reservation Platform" },
+      { title: "Travia — High-Speed Railway Reservation Suite" },
       {
         name: "description",
         content:
-          "Book confirmed berths, manage RAC and waitlist queues, and run a full admin console with RailVerse, a modern Indian Railways reservation suite.",
+          "Experience the future of railway booking with Travia. Smart berth allocation, live RAC & Waitlist queue tracking, and instant ticket promotion.",
       },
-      { property: "og:title", content: "RailVerse — Modern Railway Reservation Platform" },
+      { property: "og:title", content: "Travia — High-Speed Railway Reservation Suite" },
       {
         property: "og:description",
         content:
-          "Seat allocation, berth preferences, RAC and waitlist promotion, and live admin controls in one polished platform.",
+          "Sleek, next-generation railway platform with live berth allocation and intelligent queue promotion.",
       },
     ],
   }),
@@ -36,269 +47,367 @@ export const Route = createFileRoute("/")({
 const features = [
   {
     icon: Ticket,
-    title: "Instant seat allocation",
-    body: "Berth preferences honoured automatically — Lower, Middle or Upper — the moment a booking is confirmed.",
+    title: "Smart Berth Priority",
+    body: "Lower, Middle, or Upper berth preferences automatically honored with age-prioritized allocation for senior travelers.",
   },
   {
     icon: ListOrdered,
-    title: "RAC & waitlist queues",
-    body: "Every passenger beyond capacity enters an ordered RAC or waitlist queue with a live position.",
+    title: "Live Queue Intelligence",
+    body: "Over-capacity bookings are seamlessly assigned live ordered RAC or Waitlist queue positions with instant status visibility.",
   },
   {
     icon: Gauge,
-    title: "Automatic promotion",
-    body: "Cancel a ticket and RAC moves to confirmed, waitlist moves to RAC — instantly, across every console.",
+    title: "Instant Network Promotion",
+    body: "Upon ticket cancellation, RAC passengers immediately promote to Confirmed and Waitlist advances to RAC across the network.",
   },
   {
     icon: ShieldCheck,
-    title: "PNR & booking IDs",
-    body: "Each reservation carries a unique booking ID and PNR, persisted between sessions.",
+    title: "Dynamic Segment Pricing",
+    body: "Select exact boarding and destination stations along any express route with live fare calculation and stop timeline mapping.",
   },
 ];
 
 const steps = [
-  { n: "01", title: "Search a train", body: "Filter the network by train name, number or station." },
-  { n: "02", title: "Enter passenger details", body: "Name, age, gender and berth preference in one modal." },
-  { n: "03", title: "Get your allocation", body: "Confirmed seat, RAC slot or waitlist position with a PNR." },
+  {
+    n: "01",
+    title: "Select Express Route",
+    body: "Explore 30+ premier railway routes and choose your exact boarding and destination stations.",
+  },
+  {
+    n: "02",
+    title: "Set Passenger Preferences",
+    body: "Add passengers with age, gender, and berth preferences (Lower, Middle, Upper, Side Lower).",
+  },
+  {
+    n: "03",
+    title: "Get Instant Pass & PNR",
+    body: "Receive instant confirmed berth numbers or track live RAC/Waitlist promotion status on your boarding pass.",
+  },
 ];
 
-function Counter({ to, suffix = "" }: { to: number; suffix?: string }) {
-  const ref = useRef<HTMLSpanElement>(null);
-  const inView = useInView(ref, { once: true, margin: "-60px" });
-  const [value, setValue] = useState(0);
-
-  useEffect(() => {
-    if (!inView) return;
-    let frame = 0;
-    const total = 42;
-    const id = setInterval(() => {
-      frame++;
-      setValue(Math.round(to * (1 - Math.pow(1 - frame / total, 3))));
-      if (frame >= total) clearInterval(id);
-    }, 22);
-    return () => clearInterval(id);
-  }, [inView, to]);
-
-  return (
-    <span ref={ref}>
-      {value.toLocaleString("en-IN")}
-      {suffix}
-    </span>
-  );
-}
-
 function Landing() {
+  const [searchFrom, setSearchFrom] = useState("");
+  const [searchTo, setSearchTo] = useState("");
+  const [searchDate, setSearchDate] = useState("Today");
+
+  const popularTrains = KAGGLE_TRAIN_DATASET.slice(0, 4);
+
   return (
-    <div className="min-h-screen bg-background">
-      <header className="sticky top-0 z-30 border-b border-border/60 bg-background/80 backdrop-blur-xl">
-        <div className="mx-auto flex max-w-6xl items-center gap-4 px-4 py-4 sm:px-6">
+    <div className="relative min-h-screen text-[#dfe3e7] overflow-x-hidden bg-[#0f1417]">
+      <AnimatedTrainBackdrop />
+
+      {/* Floating Waypoint Destination Labels across the Hero area */}
+      <FloatingDestinationLabels onSelectDestination={(city) => setSearchTo(city)} />
+
+      {/* Desktop Header */}
+      <header className="hidden md:flex fixed top-0 w-full z-50 bg-[#0f1417]/80 backdrop-blur-xl border-b border-[#4cd7f6]/20 px-8 h-20 items-center justify-between shadow-xl">
+        <div className="flex items-center gap-8">
           <BrandMark />
-          <div className="ml-auto flex items-center gap-2">
-            <Button asChild variant="ghost" className="hidden sm:inline-flex">
-              <Link to="/auth" search={{ mode: "login" }}>
-                Login
-              </Link>
-            </Button>
-            <Button asChild>
-              <Link to="/auth" search={{ mode: "signup" }}>
-                Sign Up
-              </Link>
-            </Button>
-          </div>
+        </div>
+        <nav className="flex items-center gap-8">
+          <a href="#explore" className="font-mono text-xs font-bold uppercase tracking-wider text-[#4cd7f6] border-b-2 border-[#4cd7f6] pb-1">
+            Explore
+          </a>
+          <Link to="/passenger" className="font-mono text-xs font-bold uppercase tracking-wider text-[#909097] hover:text-[#4cd7f6] transition-colors">
+            Tickets
+          </Link>
+          <a href="#routes" className="font-mono text-xs font-bold uppercase tracking-wider text-[#909097] hover:text-[#4cd7f6] transition-colors">
+            Express Routes
+          </a>
+        </nav>
+        <div className="flex items-center gap-3">
+          <Button asChild variant="ghost" size="sm" className="font-bold text-[#dfe3e7] hover:text-[#4cd7f6] hover:bg-[#1b2023]">
+            <Link to="/auth" search={{ mode: "login" }}>
+              Login
+            </Link>
+          </Button>
+          <Button
+            asChild
+            size="sm"
+            className="bg-[#4cd7f6] text-[#0f1417] font-extrabold hover:bg-[#4cd7f6]/90 rounded-xl px-5 glow-button"
+          >
+            <Link to="/auth" search={{ mode: "signup" }}>
+              Sign Up
+            </Link>
+          </Button>
         </div>
       </header>
 
-      {/* Hero */}
-      <section className="hero-gradient relative overflow-hidden text-primary-foreground">
-        <motion.div
-          aria-hidden
-          className="absolute -top-24 -right-20 size-[26rem] rounded-full bg-teal/25 blur-3xl"
-          animate={{ scale: [1, 1.12, 1], opacity: [0.5, 0.8, 0.5] }}
-          transition={{ duration: 9, repeat: Infinity, ease: "easeInOut" }}
-        />
-        <div className="relative mx-auto grid max-w-6xl gap-12 px-4 py-20 sm:px-6 lg:grid-cols-[1.1fr_0.9fr] lg:py-28">
-          <motion.div
-            initial={{ opacity: 0, y: 24 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, ease: "easeOut" }}
-          >
-            <span className="glass-dark inline-flex items-center gap-2 rounded-full px-4 py-1.5 text-xs font-semibold tracking-[0.16em] uppercase">
-              Indian Railways · Seat & Queue Suite
-            </span>
-            <h1 className="mt-6 text-4xl leading-[1.05] font-extrabold sm:text-6xl">
-              Reservations that move
-              <span className="block bg-gradient-to-r from-teal to-white bg-clip-text text-transparent">
-                as fast as the train
-              </span>
-            </h1>
-            <p className="mt-6 max-w-xl text-base text-primary-foreground/75 sm:text-lg">
-              RailVerse handles confirmed berths, RAC slots and waitlists with automatic
-              promotion on every cancellation — with a full admin console behind it.
-            </p>
-            <div className="mt-9 flex flex-wrap gap-3">
-              <Button asChild size="lg" className="teal-gradient border-0 text-navy-deep hover:opacity-90">
-                <Link to="/auth" search={{ mode: "login" }}>
-                  Login <ArrowRight className="ml-1 size-4" />
-                </Link>
-              </Button>
-              <Button
-                asChild
-                size="lg"
-                variant="outline"
-                className="border-white/30 bg-transparent text-primary-foreground hover:bg-white/10 hover:text-primary-foreground"
-              >
-                <Link to="/auth" search={{ mode: "signup" }}>
-                  <LayoutDashboard className="mr-1 size-4" /> Sign Up
-                </Link>
-              </Button>
-            </div>
-          </motion.div>
+      {/* Mobile Header */}
+      <header className="md:hidden fixed top-0 w-full z-50 bg-[#0f1417]/90 backdrop-blur-xl border-b border-[#4cd7f6]/20 flex justify-between items-center px-4 h-16">
+        <BrandMark />
+        <Link to="/auth" className="flex items-center">
+          <div className="w-8 h-8 rounded-full border border-[#4cd7f6]/30 bg-[#4cd7f6]/10 text-[#4cd7f6] flex items-center justify-center font-bold text-xs">
+            U
+          </div>
+        </Link>
+      </header>
 
-          <motion.div
-            initial={{ opacity: 0, scale: 0.94 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ duration: 0.6, delay: 0.15 }}
-            className="glass-dark relative rounded-3xl p-6"
-          >
-            <div className="flex items-center justify-between text-xs tracking-widest uppercase opacity-70">
-              <span>Live coach map</span>
-              <span>S4</span>
+      <main className="pb-24 md:pb-16 pt-16 md:pt-20 relative z-10">
+        {/* Hero Section */}
+        <section className="relative w-full min-h-[60vh] md:min-h-[70vh] flex flex-col items-center justify-center pt-12 pb-8 px-4 md:px-8 text-center">
+          {/* Pill Badge */}
+          <div className="mb-6">
+            <div className="px-4 py-1.5 rounded-full border border-[#4cd7f6]/30 bg-[#171c1f]/80 backdrop-blur-md inline-flex items-center gap-2 shadow-[0_0_15px_rgba(76,215,246,0.15)]">
+              <Sparkles className="size-3.5 text-[#4cd7f6]" />
+              <span className="font-mono text-xs font-bold text-[#4cd7f6] tracking-widest uppercase">
+                NEXT-GEN RAIL RESERVATION NETWORK
+              </span>
             </div>
-            <div className="mt-5 grid grid-cols-6 gap-2">
-              {Array.from({ length: 24 }).map((_, i) => (
+          </div>
+
+          {/* Hero Typography */}
+          <h1 className="font-display text-4xl sm:text-6xl md:text-7xl font-extrabold text-white tracking-tight leading-[1.08] max-w-4xl drop-shadow-lg">
+            Your Journey.<br />
+            <span className="text-[#4cd7f6] drop-shadow-[0_0_25px_rgba(76,215,246,0.4)]">
+              Reimagined.
+            </span>
+          </h1>
+
+          <p className="mt-5 text-base sm:text-lg text-[#909097] max-w-2xl mx-auto font-medium leading-relaxed">
+            Experience ultra-fast railway booking powered by <strong>Travia</strong>. Automated berth allocation, age-prioritized seat assignment, live RAC/Waitlist promotion, and station timeline intelligence.
+          </p>
+        </section>
+
+        {/* Search Form (Glass Card Overlay) */}
+        <section id="explore" className="px-4 md:px-8 -mt-4 relative z-20">
+          <div className="max-w-4xl mx-auto glass-card rounded-2xl p-6 glow-card border border-[#4cd7f6]/25">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 items-end">
+              <div className="flex flex-col gap-1.5">
+                <label className="font-mono text-xs font-bold uppercase tracking-wider text-[#4cd7f6]">
+                  Origin Station
+                </label>
+                <div className="relative">
+                  <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-[#909097]" />
+                  <Input
+                    className="w-full bg-[#020617] border border-[#909097]/30 rounded-xl py-3 pl-10 pr-4 text-white font-medium focus:border-[#4cd7f6] focus:ring-1 focus:ring-[#4cd7f6]/50 placeholder:text-[#909097]/50 text-sm"
+                    placeholder="e.g. New Delhi, NDLS"
+                    value={searchFrom}
+                    onChange={(e) => setSearchFrom(e.target.value)}
+                  />
+                </div>
+              </div>
+
+              <div className="flex flex-col gap-1.5">
+                <label className="font-mono text-xs font-bold uppercase tracking-wider text-[#4cd7f6]">
+                  Destination Station
+                </label>
+                <div className="relative">
+                  <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-[#909097]" />
+                  <Input
+                    className="w-full bg-[#020617] border border-[#909097]/30 rounded-xl py-3 pl-10 pr-4 text-white font-medium focus:border-[#4cd7f6] focus:ring-1 focus:ring-[#4cd7f6]/50 placeholder:text-[#909097]/50 text-sm"
+                    placeholder="e.g. Mumbai Central, MMCT"
+                    value={searchTo}
+                    onChange={(e) => setSearchTo(e.target.value)}
+                  />
+                </div>
+              </div>
+
+              <div className="flex flex-col gap-1.5">
+                <label className="font-mono text-xs font-bold uppercase tracking-wider text-[#4cd7f6]">
+                  Journey Date
+                </label>
+                <div className="relative">
+                  <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-[#909097]" />
+                  <Input
+                    className="w-full bg-[#020617] border border-[#909097]/30 rounded-xl py-3 pl-10 pr-4 text-white font-medium focus:border-[#4cd7f6] focus:ring-1 focus:ring-[#4cd7f6]/50 placeholder:text-[#909097]/50 text-sm"
+                    placeholder="Today"
+                    value={searchDate}
+                    onChange={(e) => setSearchDate(e.target.value)}
+                  />
+                </div>
+              </div>
+
+              <div className="w-full">
+                <Button
+                  asChild
+                  className="w-full bg-[#4cd7f6] text-[#0f1417] font-extrabold py-3 h-11 rounded-xl glow-button hover:bg-[#4cd7f6]/90 transition-all flex items-center justify-center gap-2"
+                >
+                  <Link to="/passenger">
+                    <span>Find Express Trains</span>
+                    <ArrowRight className="size-4" />
+                  </Link>
+                </Button>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* Stats Section */}
+        <section className="px-4 md:px-8 py-12 mt-8 max-w-5xl mx-auto">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="flex flex-col justify-center border-l-2 border-[#4cd7f6] pl-4 py-2 glass-card rounded-r-xl p-4">
+              <span className="font-display text-4xl font-extrabold text-white">30+</span>
+              <span className="font-mono text-xs font-bold text-[#909097] uppercase mt-1">Active Express Routes</span>
+            </div>
+            <div className="flex flex-col justify-center border-l-2 border-[#4cd7f6] pl-4 py-2 glass-card rounded-r-xl p-4">
+              <span className="font-display text-4xl font-extrabold text-white">
+                12,000+
+              </span>
+              <span className="font-mono text-xs font-bold text-[#909097] uppercase mt-1">Confirmed Berths Mapped</span>
+            </div>
+            <div className="flex flex-col justify-center border-l-2 border-[#4cd7f6] pl-4 py-2 glass-card rounded-r-xl p-4">
+              <span className="font-display text-4xl font-extrabold text-white">99.9%</span>
+              <span className="font-mono text-xs font-bold text-[#909097] uppercase mt-1">Real-Time Queue Sync</span>
+            </div>
+          </div>
+        </section>
+
+        {/* Featured Express Trains Section */}
+        <section id="routes" className="px-4 md:px-8 py-8 max-w-6xl mx-auto">
+          <div className="glass-card rounded-2xl p-6 sm:p-8 border border-[#4cd7f6]/20">
+            <div className="flex flex-wrap items-end justify-between gap-4 border-b border-[#909097]/20 pb-4 mb-6">
+              <div>
+                <span className="font-mono text-xs font-bold tracking-widest text-[#4cd7f6] uppercase">
+                  PREMIER NETWORK
+                </span>
+                <h2 className="text-2xl sm:text-3xl font-extrabold text-white mt-1">
+                  Popular Express Journeys
+                </h2>
+              </div>
+              <Button asChild variant="outline" size="sm" className="rounded-xl border-[#4cd7f6]/30 text-[#4cd7f6] font-bold bg-[#171c1f] hover:bg-[#4cd7f6]/10">
+                <Link to="/passenger">
+                  View All Routes <ArrowRight className="ml-1.5 size-4" />
+                </Link>
+              </Button>
+            </div>
+
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+              {popularTrains.map((train) => (
                 <motion.div
-                  key={i}
-                  initial={{ opacity: 0, y: 8 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.3 + i * 0.02 }}
-                  className={`h-9 rounded-lg ${
-                    i % 5 === 0
-                      ? "bg-amber-300/70"
-                      : i % 7 === 0
-                        ? "bg-rose-400/60"
-                        : "bg-teal/60"
-                  }`}
-                />
+                  key={train.trainNumber}
+                  whileHover={{ y: -4 }}
+                  className="glass-card rounded-xl p-4 border border-[#909097]/20 flex flex-col justify-between"
+                >
+                  <div>
+                    <div className="flex items-center justify-between text-xs font-mono font-bold text-[#4cd7f6]">
+                      <span>{train.trainNumber}</span>
+                      <Badge className="bg-[#4cd7f6]/15 text-[#4cd7f6] border border-[#4cd7f6]/30 text-[10px]">
+                        ₹{train.fare}
+                      </Badge>
+                    </div>
+                    <h3 className="mt-2 text-base font-bold text-white line-clamp-1">{train.trainName}</h3>
+                    <p className="mt-1 text-xs text-[#909097]">{train.route}</p>
+                  </div>
+                  <div className="mt-4 pt-3 border-t border-[#909097]/20 flex items-center justify-between">
+                    <span className="text-[11px] font-mono text-[#909097]">{train.trainRoute.length} Stops</span>
+                    <Button asChild size="sm" className="bg-[#4cd7f6] text-[#0f1417] font-extrabold text-xs rounded-lg hover:bg-[#4cd7f6]/90">
+                      <Link to="/passenger">Book Ticket</Link>
+                    </Button>
+                  </div>
+                </motion.div>
               ))}
             </div>
-            <div className="mt-6 flex items-center gap-3">
-              <motion.span
-                animate={{ x: [0, 220, 0] }}
-                transition={{ duration: 7, repeat: Infinity, ease: "easeInOut" }}
-                className="text-teal"
-              >
-                <TrainFront className="size-6" />
-              </motion.span>
-            </div>
-            <div className="rail-track h-1 w-full rounded-full opacity-70" />
-          </motion.div>
-        </div>
-      </section>
-
-      {/* Stats */}
-      <section className="mx-auto grid max-w-6xl gap-4 px-4 py-14 sm:grid-cols-2 sm:px-6 lg:grid-cols-4">
-        {[
-          { label: "Berths mapped", value: 12480 },
-          { label: "Queue promotions", value: 3260 },
-          { label: "Routes covered", value: 148 },
-          { label: "Uptime", value: 99, suffix: "%" },
-        ].map((s, i) => (
-          <motion.div
-            key={s.label}
-            initial={{ opacity: 0, y: 18 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.4, delay: i * 0.07 }}
-            className="glass-panel rounded-2xl px-6 py-6"
-          >
-            <p className="font-display text-4xl font-bold text-navy">
-              <Counter to={s.value} suffix={s.suffix ?? ""} />
-            </p>
-            <p className="mt-1 text-sm text-muted-foreground">{s.label}</p>
-          </motion.div>
-        ))}
-      </section>
-
-      {/* Features */}
-      <section className="mx-auto max-w-6xl px-4 py-10 sm:px-6">
-        <h2 className="text-3xl font-bold sm:text-4xl">Built for the whole journey</h2>
-        <p className="mt-2 max-w-2xl text-muted-foreground">
-          Every rule of an Indian Railways reservation chart, modelled end to end.
-        </p>
-        <div className="mt-10 grid gap-5 sm:grid-cols-2">
-          {features.map((f, i) => (
-            <motion.div
-              key={f.title}
-              initial={{ opacity: 0, y: 18 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.4, delay: i * 0.06 }}
-              whileHover={{ y: -4 }}
-              className="glass-panel rounded-2xl p-6"
-            >
-              <span className="teal-gradient inline-flex size-11 items-center justify-center rounded-xl text-navy-deep">
-                <f.icon className="size-5" />
-              </span>
-              <h3 className="mt-4 text-lg font-semibold">{f.title}</h3>
-              <p className="mt-2 text-sm text-muted-foreground">{f.body}</p>
-            </motion.div>
-          ))}
-        </div>
-      </section>
-
-      {/* How it works */}
-      <section className="mx-auto max-w-6xl px-4 py-16 sm:px-6">
-        <h2 className="text-3xl font-bold sm:text-4xl">How it works</h2>
-        <div className="mt-10 grid gap-5 md:grid-cols-3">
-          {steps.map((s, i) => (
-            <motion.div
-              key={s.n}
-              initial={{ opacity: 0, y: 18 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.4, delay: i * 0.08 }}
-              className="relative rounded-2xl border border-border bg-card p-6"
-            >
-              <span className="font-display text-sm font-bold tracking-[0.2em] text-teal-deep">
-                {s.n}
-              </span>
-              <h3 className="mt-3 text-lg font-semibold">{s.title}</h3>
-              <p className="mt-2 text-sm text-muted-foreground">{s.body}</p>
-            </motion.div>
-          ))}
-        </div>
-      </section>
-
-      {/* CTA */}
-      <section className="mx-auto max-w-6xl px-4 pb-20 sm:px-6">
-        <div className="hero-gradient overflow-hidden rounded-3xl px-8 py-14 text-center text-primary-foreground">
-          <h2 className="text-3xl font-bold sm:text-4xl">Ready to board?</h2>
-          <p className="mx-auto mt-3 max-w-xl text-primary-foreground/75">
-            Open the passenger console to book, or head to admin to shape the network.
-          </p>
-          <div className="mt-8 flex flex-wrap justify-center gap-3">
-            <Button asChild size="lg" className="teal-gradient border-0 text-navy-deep hover:opacity-90">
-              <Link to="/auth" search={{ mode: "login" }}>
-                Login
-              </Link>
-            </Button>
-            <Button
-              asChild
-              size="lg"
-              variant="outline"
-              className="border-white/30 bg-transparent text-primary-foreground hover:bg-white/10 hover:text-primary-foreground"
-            >
-              <Link to="/auth" search={{ mode: "signup" }}>
-                Sign Up
-              </Link>
-            </Button>
           </div>
-        </div>
-      </section>
+        </section>
 
-      <footer className="border-t border-border py-8 text-center text-sm text-muted-foreground">
-        RailVerse · Seat, RAC & waitlist reservation suite
+        {/* Platform Features Grid */}
+        <section className="px-4 md:px-8 py-12 max-w-6xl mx-auto">
+          <div className="text-center max-w-2xl mx-auto mb-10">
+            <span className="font-mono text-xs font-bold tracking-widest text-[#4cd7f6] uppercase">
+              SMART RESERVATION ENGINE
+            </span>
+            <h2 className="text-2xl sm:text-3xl font-extrabold text-white mt-1">
+              Engineered for Modern Rail Travel
+            </h2>
+            <p className="text-xs text-[#909097] mt-1 font-medium">
+              Real-time seat allocation algorithms with instant queue promotion intelligence.
+            </p>
+          </div>
+
+          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+            {features.map((f, i) => (
+              <motion.div
+                key={f.title}
+                initial={{ opacity: 0, y: 16 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.4, delay: i * 0.08 }}
+                className="glass-card rounded-2xl p-6 border border-[#909097]/20 hover:border-[#4cd7f6]/40 transition-colors"
+              >
+                <div className="w-10 h-10 rounded-xl bg-[#4cd7f6]/15 text-[#4cd7f6] flex items-center justify-center mb-4">
+                  <f.icon className="size-5" />
+                </div>
+                <h3 className="text-base font-bold text-white">{f.title}</h3>
+                <p className="mt-2 text-xs leading-relaxed text-[#909097] font-medium">{f.body}</p>
+              </motion.div>
+            ))}
+          </div>
+        </section>
+
+        {/* How It Works Workflow Section */}
+        <section className="px-4 md:px-8 py-10 max-w-6xl mx-auto">
+          <div className="glass-card rounded-2xl p-8 border border-[#4cd7f6]/20">
+            <div className="text-center max-w-xl mx-auto mb-8">
+              <h2 className="text-2xl font-extrabold text-white sm:text-3xl">
+                Three Simple Steps to Board
+              </h2>
+              <p className="text-xs text-[#909097] mt-1 font-medium">
+                Seamless booking workflow designed for speed, clarity, and precision.
+              </p>
+            </div>
+
+            <div className="grid gap-6 md:grid-cols-3">
+              {steps.map((s) => (
+                <div key={s.n} className="rounded-xl border border-[#909097]/20 bg-[#171c1f]/80 p-5 space-y-2">
+                  <span className="font-mono text-xs font-extrabold tracking-widest text-[#4cd7f6]">
+                    {s.n}
+                  </span>
+                  <h3 className="text-base font-extrabold text-white">{s.title}</h3>
+                  <p className="text-xs text-[#909097] font-medium leading-relaxed">{s.body}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        {/* CTA Footer Hero Banner */}
+        <section className="px-4 md:px-8 py-8 max-w-6xl mx-auto">
+          <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-[#0f172a] via-[#0b1d28] to-[#053b48] border border-[#4cd7f6]/30 p-8 sm:p-12 text-center text-white glow-card">
+            <div className="relative z-10 max-w-2xl mx-auto space-y-4">
+              <Badge className="bg-[#4cd7f6]/20 text-[#4cd7f6] border-[#4cd7f6]/40 px-3 py-1 font-mono text-xs uppercase tracking-widest">
+                READY TO TRAVEL
+              </Badge>
+              <h2 className="text-2xl sm:text-4xl font-extrabold text-white tracking-tight">
+                Ready for your next journey?
+              </h2>
+              <p className="text-xs sm:text-sm text-[#909097] leading-relaxed font-medium">
+                Book your confirmed berth with smart preferences or access the admin console to manage network capacities.
+              </p>
+
+              <div className="pt-4 flex flex-wrap justify-center gap-3.5">
+                <Button
+                  asChild
+                  size="lg"
+                  className="bg-[#4cd7f6] text-[#0f1417] font-extrabold hover:bg-[#4cd7f6]/90 rounded-xl px-7 text-sm glow-button"
+                >
+                  <Link to="/passenger">
+                    Book Ticket Now <ArrowRight className="ml-1.5 size-4" />
+                  </Link>
+                </Button>
+
+                <Button
+                  asChild
+                  size="lg"
+                  variant="outline"
+                  className="border-[#909097]/40 bg-[#171c1f]/80 text-white hover:bg-[#171c1f] font-bold rounded-xl px-6 text-sm"
+                >
+                  <Link to="/admin">
+                    <LayoutDashboard className="mr-1.5 size-4 text-[#4cd7f6]" /> Admin Console
+                  </Link>
+                </Button>
+              </div>
+            </div>
+          </div>
+        </section>
+      </main>
+
+      {/* Minimal Footer */}
+      <footer className="border-t border-[#909097]/15 bg-[#0f1417] py-6 text-center text-xs font-mono text-[#909097]">
+        <p>© 2026 TRAVIA · Your Journey. Reimagined.</p>
       </footer>
     </div>
   );
 }
+
+

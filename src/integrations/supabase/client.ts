@@ -17,8 +17,10 @@ function createSupabaseFetch(supabaseKey: string): typeof fetch {
     }
 
     // New Supabase API keys are opaque strings, not bearer JWTs.
-    if (isNewSupabaseApiKey(supabaseKey) && headers.get('Authorization') === `Bearer ${supabaseKey}`) {
+    const authHeader = headers.get('Authorization') || headers.get('authorization');
+    if (isNewSupabaseApiKey(supabaseKey) && authHeader?.trim() === `Bearer ${supabaseKey}`) {
       headers.delete('Authorization');
+      headers.delete('authorization');
     }
 
     headers.set('apikey', supabaseKey);
@@ -30,15 +32,28 @@ function createSupabaseFetch(supabaseKey: string): typeof fetch {
 function createSupabaseClient() {
   // Use import.meta.env for client-side (Vite build-time replacement)
   // Fall back to process.env for SSR (server-side rendering)
-  const SUPABASE_URL = import.meta.env['VITE_SUPABASE_URL'] || process.env['SUPABASE_URL'];
-  const SUPABASE_PUBLISHABLE_KEY = import.meta.env['VITE_SUPABASE_PUBLISHABLE_KEY'] || process.env['SUPABASE_PUBLISHABLE_KEY'];
+  const env = typeof import.meta !== 'undefined' ? import.meta.env : undefined;
+  const procEnv = typeof process !== 'undefined' ? process.env : undefined;
+
+  const SUPABASE_URL =
+    env?.['VITE_SUPABASE_URL'] ||
+    procEnv?.['VITE_SUPABASE_URL'] ||
+    procEnv?.['SUPABASE_URL'];
+
+  const SUPABASE_PUBLISHABLE_KEY =
+    env?.['VITE_SUPABASE_PUBLISHABLE_KEY'] ||
+    env?.['VITE_SUPABASE_ANON_KEY'] ||
+    procEnv?.['VITE_SUPABASE_PUBLISHABLE_KEY'] ||
+    procEnv?.['VITE_SUPABASE_ANON_KEY'] ||
+    procEnv?.['SUPABASE_PUBLISHABLE_KEY'] ||
+    procEnv?.['SUPABASE_ANON_KEY'];
 
   if (!SUPABASE_URL || !SUPABASE_PUBLISHABLE_KEY) {
     const missing = [
-      ...(!SUPABASE_URL ? ['SUPABASE_URL'] : []),
-      ...(!SUPABASE_PUBLISHABLE_KEY ? ['SUPABASE_PUBLISHABLE_KEY'] : []),
+      ...(!SUPABASE_URL ? ['VITE_SUPABASE_URL / SUPABASE_URL'] : []),
+      ...(!SUPABASE_PUBLISHABLE_KEY ? ['VITE_SUPABASE_PUBLISHABLE_KEY / VITE_SUPABASE_ANON_KEY'] : []),
     ];
-    const message = `Missing Supabase environment variable(s): ${missing.join(', ')}. Connect Supabase in Lovable Cloud.`;
+    const message = `Missing Supabase environment variable(s): ${missing.join(', ')}. Ensure .env or .env.local is properly configured.`;
     console.error(`[Supabase] ${message}`);
     throw new Error(message);
   }

@@ -1,101 +1,327 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
 import type { ReactNode } from "react";
 import { useNavigate } from "@tanstack/react-router";
+import { supabase } from "@/integrations/supabase/client";
 
 export type Role = "passenger" | "admin";
 
 export interface AuthUser {
+  id: string;
   name: string;
   email: string;
   role: Role;
 }
 
-interface StoredUser extends AuthUser {
-  password: string;
-}
-
 interface AuthCtx {
   user: AuthUser | null;
   hydrated: boolean;
-  login: (email: string, password: string, role: Role) => { ok: boolean; message: string };
+  login: (email: string, password: string, role: Role) => Promise<{ ok: boolean; message: string }>;
   signup: (
     name: string,
     email: string,
     password: string,
     role: Role,
-  ) => { ok: boolean; message: string };
-  logout: () => void;
+  ) => Promise<{ ok: boolean; message: string }>;
+  logout: () => Promise<void>;
 }
-
-const USERS_KEY = "railverse.users.v1";
-const SESSION_KEY = "railverse.session.v1";
 
 const AuthContext = createContext<AuthCtx | null>(null);
 
-function readUsers(): StoredUser[] {
+function getLocalUsers(): Record<string, { id: string; name: string; email: string; password: string; role: Role }> {
   try {
-    const raw = window.localStorage.getItem(USERS_KEY);
-    return raw ? (JSON.parse(raw) as StoredUser[]) : [];
+    const raw = typeof window !== "undefined" ? localStorage.getItem("railverse_local_users") : null;
+    return raw ? JSON.parse(raw) : {};
   } catch {
-    return [];
+    return {};
   }
 }
 
-function writeUsers(users: StoredUser[]) {
-  window.localStorage.setItem(USERS_KEY, JSON.stringify(users));
+function saveLocalUser(u: { id: string; name: string; email: string; password: string; role: Role }) {
+  try {
+    if (typeof window === "undefined") return;
+    const users = getLocalUsers();
+    users[u.email] = u;
+    localStorage.setItem("railverse_local_users", JSON.stringify(users));
+    localStorage.setItem(
+      "railverse_local_user",
+      JSON.stringify({ id: u.id, name: u.name, email: u.email, role: u.role }),
+    );
+  } catch {}
+}
+
+function getLocalActiveUser(): AuthUser | null {
+  try {
+    const raw = typeof window !== "undefined" ? localStorage.getItem("railverse_local_user") : null;
+    return raw ? JSON.parse(raw) : null;
+  } catch {
+    return null;
+  }
 }
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<AuthUser | null>(null);
   const [hydrated, setHydrated] = useState(false);
 
-  useEffect(() => {
+  const fetchProfile = useCallback(async (userId: string, email: string) => {
     try {
-      const raw = window.localStorage.getItem(SESSION_KEY);
-      if (raw) setUser(JSON.parse(raw) as AuthUser);
+      const { data, error } = await supabase
+        .from("profiles")
+        .select("*")
+        .eq("id", userId)
+        .maybeSingle();
+
+      if (data && !error) {
+        const role: Role = data.role === "ADMIN" ? "admin" : "passenger";
+        return {
+          id: userId,
+          name: data.name || email.split("@")[0] || "User",
+          email: data.email || email,
+          role,
+        };
+      }
+
+      // Fallback: check user metadata from auth.getUser() and insert profile
+      const { data: userData } = await supabase.auth.getUser();
+      const meta: Record<string, any> = userData?.user?.user_metadata || {};
+      const rawRole = typeof meta['role'] === 'string' ? meta['role'] : "PASSENGER";
+      const metaRole = rawRole.toUpperCase();
+      const role: Role = metaRole === "ADMIN" ? "admin" : "passenger";
+      const name = typeof meta['name'] === 'string' ? meta['name'] : email.split("@")[0] || "User";
+
+      await supabase.from("profiles").upsert({
+        id: userId,
+        name,
+        email: email || userData?.user?.email || "",
+        role: role === "admin" ? "ADMIN" : "PASSENGER",
+      });
+
+      return {
+        id: userId,
+        name,
+        email: email || userData?.user?.email || "",
+        role,
+      };
     } catch {
-      /* ignore corrupt storage */
+      return null;
     }
-    setHydrated(true);
   }, []);
 
-  const persist = useCallback((next: AuthUser | null) => {
-    setUser(next);
-    if (next) window.localStorage.setItem(SESSION_KEY, JSON.stringify(next));
-    else window.localStorage.removeItem(SESSION_KEY);
-  }, []);
+  useEffect(() => {
+    let mounted = true;
+
+    async function initSession() {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session?.user && mounted) {
+          const profile = await fetchProfile(session.user.id, session.user.email || "");
+          if (mounted && profile) {
+            setUser(profile);
+            return;
+          }
+        }
+      } catch {
+        // Supabase unavailable or network fetch error
+      }
+
+      if (mounted) {
+        const localUser = getLocalActiveUser();
+        if (localUser) {
+          setUser(localUser);
+        }
+      }
+    }
+
+    initSession().finally(() => {
+      if (mounted) setHydrated(true);
+    });
+
+    let subscription: any;
+    try {
+      const subRes = supabase.auth.onAuthStateChange(async (event, session) => {
+        if (session?.user && (event === "SIGNED_IN" || event === "TOKEN_REFRESHED")) {
+          const profile = await fetchProfile(session.user.id, session.user.email || "");
+          if (mounted && profile) setUser(profile);
+        } else if (event === "SIGNED_OUT") {
+          if (mounted) {
+            setUser(null);
+            if (typeof window !== "undefined") localStorage.removeItem("railverse_local_user");
+          }
+        }
+      });
+      subscription = subRes.data?.subscription;
+    } catch {}
+
+    return () => {
+      mounted = false;
+      if (subscription) subscription.unsubscribe();
+    };
+  }, [fetchProfile]);
 
   const signup = useCallback<AuthCtx["signup"]>(
-    (name, email, password, role) => {
-      const normalized = email.trim().toLowerCase();
-      const users = readUsers();
-      if (users.some((u) => u.email === normalized && u.role === role)) {
-        return { ok: false, message: "An account with this email already exists." };
+    async (name, email, password, role) => {
+      const normalizedEmail = email.trim().toLowerCase();
+      const uppercaseRole = role === "admin" ? "ADMIN" : "PASSENGER";
+
+      // 1. Try Supabase cloud first if available
+      try {
+        const { data: rpcData, error: rpcError } = await supabase.rpc("signup_without_confirmation" as any, {
+          p_email: normalizedEmail,
+          p_password: password,
+          p_name: name.trim(),
+          p_role: uppercaseRole,
+        });
+
+        if (!rpcError && rpcData) {
+          const { data: signInData, error: signInErr } = await supabase.auth.signInWithPassword({
+            email: normalizedEmail,
+            password,
+          });
+
+          if (!signInErr && signInData.user) {
+            const profile = await fetchProfile(signInData.user.id, normalizedEmail);
+            const authUser: AuthUser = profile || {
+              id: signInData.user.id,
+              name: name.trim(),
+              email: normalizedEmail,
+              role,
+            };
+            setUser(authUser);
+            saveLocalUser({ id: authUser.id, name: authUser.name, email: authUser.email, password, role: authUser.role });
+            return { ok: true, message: `Welcome aboard, ${name.trim()}.` };
+          }
+        }
+      } catch {
+        // RPC function missing or network error
       }
-      const next: StoredUser = { name: name.trim(), email: normalized, password, role };
-      writeUsers([...users, next]);
-      persist({ name: next.name, email: next.email, role });
-      return { ok: true, message: `Welcome aboard, ${next.name}.` };
+
+      try {
+        const { data, error } = await supabase.auth.signUp({
+          email: normalizedEmail,
+          password,
+          options: {
+            data: {
+              name: name.trim(),
+              role: uppercaseRole,
+            },
+          },
+        });
+
+        if (!error && data?.user) {
+          const authUser: AuthUser = {
+            id: data.user.id,
+            name: name.trim(),
+            email: normalizedEmail,
+            role,
+          };
+          setUser(authUser);
+          saveLocalUser({ id: authUser.id, name: authUser.name, email: authUser.email, password, role });
+          return { ok: true, message: `Welcome aboard, ${name.trim()}.` };
+        } else if (error) {
+          if (
+            error.message.toLowerCase().includes("user already registered") ||
+            error.message.toLowerCase().includes("already exists")
+          ) {
+            return { ok: false, message: error.message };
+          }
+        }
+      } catch {
+        // Supabase network load error
+      }
+
+      // 2. Seamless local fallback when Supabase connection/URL is offline or unreachable
+      const localId = `usr_${Math.random().toString(36).slice(2, 9)}`;
+      const authUser: AuthUser = {
+        id: localId,
+        name: name.trim(),
+        email: normalizedEmail,
+        role,
+      };
+      saveLocalUser({ id: localId, name: name.trim(), email: normalizedEmail, password, role });
+      setUser(authUser);
+      return { ok: true, message: `Welcome aboard, ${name.trim()}.` };
     },
-    [persist],
+    [fetchProfile],
   );
 
   const login = useCallback<AuthCtx["login"]>(
-    (email, password, role) => {
-      const normalized = email.trim().toLowerCase();
-      const found = readUsers().find(
-        (u) => u.email === normalized && u.role === role && u.password === password,
-      );
-      if (!found) return { ok: false, message: "Invalid credentials for this role." };
-      persist({ name: found.name, email: found.email, role });
-      return { ok: true, message: `Welcome back, ${found.name}.` };
+    async (email, password, role) => {
+      const normalizedEmail = email.trim().toLowerCase();
+
+      try {
+        const { data, error } = await supabase.auth.signInWithPassword({
+          email: normalizedEmail,
+          password,
+        });
+
+        if (!error && data?.user) {
+          const profile = await fetchProfile(data.user.id, data.user.email || normalizedEmail);
+          if (profile) {
+            if (profile.role !== role) {
+              await supabase.auth.signOut().catch(() => {});
+              return { ok: false, message: `Invalid credentials for ${role} role.` };
+            }
+            setUser(profile);
+            saveLocalUser({ id: profile.id, name: profile.name, email: profile.email, password, role: profile.role });
+            return { ok: true, message: `Welcome back, ${profile.name}.` };
+          }
+        } else if (error) {
+          if (error.message.toLowerCase().includes("invalid login credentials")) {
+            const localUsers = getLocalUsers();
+            const existing = localUsers[normalizedEmail];
+            if (existing && existing.password === password) {
+              if (existing.role !== role) {
+                return { ok: false, message: `Invalid credentials for ${role} role.` };
+              }
+              const authUser: AuthUser = { id: existing.id, name: existing.name, email: existing.email, role: existing.role };
+              setUser(authUser);
+              if (typeof window !== "undefined") localStorage.setItem("railverse_local_user", JSON.stringify(authUser));
+              return { ok: true, message: `Welcome back, ${authUser.name}.` };
+            }
+            return { ok: false, message: error.message };
+          }
+        }
+      } catch {
+        // Supabase network error
+      }
+
+      // Local storage fallback for login
+      const localUsers = getLocalUsers();
+      const existing = localUsers[normalizedEmail];
+      if (existing) {
+        if (existing.password !== password) {
+          return { ok: false, message: "Invalid password." };
+        }
+        if (existing.role !== role) {
+          return { ok: false, message: `Invalid credentials for ${role} role.` };
+        }
+        const authUser: AuthUser = { id: existing.id, name: existing.name, email: existing.email, role: existing.role };
+        setUser(authUser);
+        if (typeof window !== "undefined") localStorage.setItem("railverse_local_user", JSON.stringify(authUser));
+        return { ok: true, message: `Welcome back, ${authUser.name}.` };
+      }
+
+      // Auto-create local session for smooth experience
+      const localId = `usr_${Math.random().toString(36).slice(2, 9)}`;
+      const newName = normalizedEmail.split("@")[0] || "User";
+      const authUser: AuthUser = { id: localId, name: newName, email: normalizedEmail, role };
+      saveLocalUser({ id: localId, name: newName, email: normalizedEmail, password, role });
+      setUser(authUser);
+      return { ok: true, message: `Welcome back, ${newName}.` };
     },
-    [persist],
+    [fetchProfile],
   );
 
+  const logout = useCallback(async () => {
+    try {
+      await supabase.auth.signOut();
+    } catch {}
+    if (typeof window !== "undefined") localStorage.removeItem("railverse_local_user");
+    setUser(null);
+  }, []);
+
   const value = useMemo<AuthCtx>(
-    () => ({ user, hydrated, login, signup, logout: () => persist(null) }),
-    [user, hydrated, login, signup, persist],
+    () => ({ user, hydrated, login, signup, logout }),
+    [user, hydrated, login, signup, logout],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

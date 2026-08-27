@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 import { motion } from "motion/react";
-import { Pencil, Plus, RotateCcw, Trash2, X } from "lucide-react";
+import { Navigation, Pencil, Plus, RotateCcw, Trash2, X } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -11,22 +11,23 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ConsoleShell, StatCard } from "@/components/railverse/shell";
 import { useRail } from "@/lib/railverse/store";
 import { useRequireRole } from "@/lib/railverse/auth";
-import { countsFor, makeTrain } from "@/lib/railverse/engine";
+import { countsFor } from "@/lib/railverse/engine";
 import type { Train } from "@/lib/railverse/types";
+import { TrainDetailsModal } from "@/components/railverse/train-details-modal";
 
 export const Route = createFileRoute("/admin")({
   head: () => ({
     meta: [
-      { title: "Admin Console — RailVerse" },
+      { title: "Admin Console — Travia" },
       {
         name: "description",
         content:
-          "Add, edit and remove trains, adjust seat, RAC and waitlist capacity, and monitor every booking in the RailVerse admin console.",
+          "Add, edit and remove trains, adjust seat, RAC and waitlist capacity, and monitor every booking in the Travia admin console.",
       },
-      { property: "og:title", content: "Admin Console — RailVerse" },
+      { property: "og:title", content: "Admin Console — Travia" },
       {
         property: "og:description",
-        content: "Manage trains, capacity and bookings across the RailVerse network.",
+        content: "Manage trains, capacity and bookings across the network.",
       },
     ],
   }),
@@ -52,6 +53,8 @@ function AdminConsole() {
   const allowed = useRequireRole("admin");
   const { state, addTrain, updateTrain, deleteTrain, reset, cancel } = useRail();
   const [draft, setDraft] = useState<Draft | null>(null);
+  const [detailsTrain, setDetailsTrain] = useState<Train | null>(null);
+  const [detailsOpen, setDetailsOpen] = useState(false);
 
   const totals = state.trains.reduce(
     (acc, t) => {
@@ -65,60 +68,72 @@ function AdminConsole() {
     { confirmed: 0, rac: 0, wl: 0 },
   );
 
-  const save = () => {
+  const save = async () => {
     if (!draft) return;
     if (!draft.name.trim() || !draft.number.trim()) {
       toast.error("Train name and number are required.");
       return;
     }
-    if (draft.id) {
-      updateTrain({ ...(draft as Train) });
-      toast.success("Train updated");
-    } else {
-      const { id: _ignored, ...rest } = draft;
-      addTrain(makeTrain(rest));
-      toast.success("Train added");
+    try {
+      if (draft.id) {
+        await updateTrain({ ...(draft as Train) });
+        toast.success("Train updated");
+      } else {
+        const { id: _ignored, ...rest } = draft;
+        await addTrain(rest);
+        toast.success("Train added");
+      }
+      setDraft(null);
+    } catch (err: any) {
+      toast.error(err.message || "Failed to save train.");
     }
-    setDraft(null);
   };
 
   const num = (v: string) => Math.max(0, Number(v) || 0);
 
-  if (!allowed) return <div className="min-h-screen bg-background" />;
+  if (!allowed) return <div className="min-h-screen bg-[#0f1417]" />;
 
   return (
     <ConsoleShell
-      title="Admin console"
-      subtitle="Manage the network, capacity and every reservation on the chart."
+      title="Admin Console"
+      subtitle="Manage network routes, adjust coach capacities, and monitor live passenger reservations."
       actions={
         <Button
           variant="outline"
-          onClick={() => {
-            reset();
-            toast.success("Demo data reset");
+          onClick={async () => {
+            await reset();
+            toast.success("Data refreshed from backend");
           }}
+          className="rounded-xl border-[#4cd7f6]/30 bg-[#171c1f] text-[#4cd7f6] font-bold hover:bg-[#4cd7f6]/10"
         >
-          <RotateCcw className="mr-1 size-4" /> Reset data
+          <RotateCcw className="mr-1.5 size-4" /> Refresh Data
         </Button>
       }
     >
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <StatCard label="Trains" value={state.trains.length} />
+        <StatCard label="Trains Active" value={state.trains.length} />
         <StatCard label="Confirmed" value={totals.confirmed} tone="teal" delay={0.05} />
         <StatCard label="RAC" value={totals.rac} tone="amber" delay={0.1} />
         <StatCard label="Waitlist" value={totals.wl} tone="rose" delay={0.15} />
       </div>
 
       <Tabs defaultValue="trains" className="mt-8">
-        <TabsList>
-          <TabsTrigger value="trains">Manage trains</TabsTrigger>
-          <TabsTrigger value="bookings">Monitor bookings</TabsTrigger>
+        <TabsList className="bg-[#171c1f] border border-[#909097]/20 p-1 rounded-xl">
+          <TabsTrigger value="trains" className="data-[state=active]:bg-[#4cd7f6] data-[state=active]:text-[#0f1417] font-bold text-xs rounded-lg">
+            Manage Trains
+          </TabsTrigger>
+          <TabsTrigger value="bookings" className="data-[state=active]:bg-[#4cd7f6] data-[state=active]:text-[#0f1417] font-bold text-xs rounded-lg">
+            Monitor Bookings ({state.bookings.length})
+          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="trains" className="mt-6 space-y-4">
           {!draft && (
-            <Button onClick={() => setDraft(emptyDraft())}>
-              <Plus className="mr-1 size-4" /> Add train
+            <Button
+              onClick={() => setDraft(emptyDraft())}
+              className="bg-[#4cd7f6] text-[#0f1417] font-extrabold rounded-xl px-5 glow-button hover:bg-[#4cd7f6]/90"
+            >
+              <Plus className="mr-1.5 size-4" /> Add New Train
             </Button>
           )}
 
@@ -126,16 +141,17 @@ function AdminConsole() {
             <motion.div
               initial={{ opacity: 0, y: -8 }}
               animate={{ opacity: 1, y: 0 }}
-              className="glass-panel rounded-2xl p-6"
+              className="glass-card rounded-2xl p-6 border border-[#4cd7f6]/30 glow-card"
             >
-              <div className="mb-4 flex items-center justify-between">
-                <h3 className="text-lg font-semibold">
-                  {draft.id ? "Edit train" : "New train"}
+              <div className="mb-4 flex items-center justify-between border-b border-[#909097]/20 pb-3">
+                <h3 className="text-lg font-bold text-white">
+                  {draft.id ? "Edit Train Configuration" : "Add New Train to Fleet"}
                 </h3>
-                <Button variant="ghost" size="icon" onClick={() => setDraft(null)}>
+                <Button variant="ghost" size="icon" onClick={() => setDraft(null)} className="text-[#909097] hover:text-white">
                   <X className="size-4" />
                 </Button>
               </div>
+
               <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
                 {(
                   [
@@ -147,12 +163,15 @@ function AdminConsole() {
                     ["Arrival", "arrival"],
                   ] as const
                 ).map(([label, key]) => (
-                  <div key={key} className="grid gap-2">
-                    <Label htmlFor={key}>{label}</Label>
+                  <div key={key} className="grid gap-1.5">
+                    <Label htmlFor={key} className="font-mono text-xs font-bold uppercase text-[#4cd7f6]">
+                      {label}
+                    </Label>
                     <Input
                       id={key}
                       value={draft[key]}
                       onChange={(e) => setDraft({ ...draft, [key]: e.target.value })}
+                      className="bg-[#020617] border border-[#909097]/30 text-white rounded-xl font-medium focus:border-[#4cd7f6]"
                     />
                   </div>
                 ))}
@@ -164,20 +183,26 @@ function AdminConsole() {
                     ["Waitlist capacity", "wlTotal"],
                   ] as const
                 ).map(([label, key]) => (
-                  <div key={key} className="grid gap-2">
-                    <Label htmlFor={key}>{label}</Label>
+                  <div key={key} className="grid gap-1.5">
+                    <Label htmlFor={key} className="font-mono text-xs font-bold uppercase text-[#4cd7f6]">
+                      {label}
+                    </Label>
                     <Input
                       id={key}
                       inputMode="numeric"
                       value={String(draft[key])}
                       onChange={(e) => setDraft({ ...draft, [key]: num(e.target.value) })}
+                      className="bg-[#020617] border border-[#909097]/30 text-white rounded-xl font-medium focus:border-[#4cd7f6]"
                     />
                   </div>
                 ))}
               </div>
-              <div className="mt-5 flex gap-2">
-                <Button onClick={save}>Save train</Button>
-                <Button variant="outline" onClick={() => setDraft(null)}>
+
+              <div className="mt-6 flex gap-3 pt-3 border-t border-[#909097]/20">
+                <Button onClick={save} className="bg-[#4cd7f6] text-[#0f1417] font-extrabold rounded-xl px-6 glow-button">
+                  Save Train
+                </Button>
+                <Button variant="outline" onClick={() => setDraft(null)} className="rounded-xl border-[#909097]/30 text-[#909097]">
                   Cancel
                 </Button>
               </div>
@@ -193,42 +218,70 @@ function AdminConsole() {
                 initial={{ opacity: 0, y: 12 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: i * 0.04 }}
-                className="glass-panel relative overflow-hidden rounded-2xl p-5 sm:p-6"
+                className="glass-card relative overflow-hidden rounded-2xl p-5 sm:p-6 border border-[#4cd7f6]/20"
               >
-                <span className="teal-gradient absolute inset-y-0 left-0 w-1.5" />
+                <span className="bg-[#4cd7f6] absolute inset-y-0 left-0 w-1" />
                 <div className="flex flex-wrap items-start justify-between gap-4">
                   <div>
-                    <p className="font-mono text-xs tracking-[0.2em] text-teal-deep">
+                    <p className="font-mono text-xs font-bold tracking-widest text-[#4cd7f6] uppercase">
                       {train.number}
                     </p>
-                    <h3 className="mt-1 text-xl font-bold">{train.name}</h3>
-                    <p className="mt-1 text-sm text-muted-foreground">
-                      {train.from} {train.departure} → {train.to} {train.arrival} · ₹
+                    <h3 className="mt-1 text-xl font-extrabold text-white">{train.name}</h3>
+                    <p className="mt-1 text-xs font-mono text-[#909097]">
+                      {train.from} ({train.departure}) → {train.to} ({train.arrival}) · ₹
                       {train.fare.toLocaleString("en-IN")}
                     </p>
-                    <div className="mt-3 flex flex-wrap gap-2">
-                      <Badge variant="secondary">
+                    <div className="mt-3 flex flex-wrap items-center gap-2">
+                      <Badge className="bg-[#4cd7f6]/15 text-[#4cd7f6] border border-[#4cd7f6]/30 font-mono text-[10px]">
                         Seats {c.confirmed}/{train.seats}
                       </Badge>
-                      <Badge variant="secondary">
+                      <Badge className="bg-amber-500/15 text-amber-300 border border-amber-500/30 font-mono text-[10px]">
                         RAC {c.rac}/{train.racTotal}
                       </Badge>
-                      <Badge variant="secondary">
+                      <Badge className="bg-rose-500/15 text-rose-300 border border-rose-500/30 font-mono text-[10px]">
                         WL {c.wl}/{train.wlTotal}
                       </Badge>
+                      {(train.runningDays || ["Daily"]).map((d) => (
+                        <Badge key={d} variant="outline" className="text-[10px] py-0 font-mono border-[#909097]/30 text-[#909097]">
+                          {d}
+                        </Badge>
+                      ))}
                     </div>
                   </div>
-                  <div className="flex gap-2">
-                    <Button variant="outline" onClick={() => setDraft({ ...train })}>
-                      <Pencil className="mr-1 size-4" /> Update
+
+                  <div className="flex items-center gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        setDetailsTrain(train);
+                        setDetailsOpen(true);
+                      }}
+                      className="rounded-xl border-[#909097]/30 bg-[#171c1f] text-white font-bold"
+                    >
+                      <Navigation className="mr-1.5 size-3.5 text-[#4cd7f6]" /> Route
                     </Button>
+
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setDraft({ ...train })}
+                      className="rounded-xl border-[#4cd7f6]/30 bg-[#171c1f] text-[#4cd7f6] font-bold"
+                    >
+                      <Pencil className="mr-1.5 size-3.5" /> Edit
+                    </Button>
+
                     <Button
                       variant="outline"
                       size="icon"
-                      className="text-destructive hover:text-destructive"
-                      onClick={() => {
-                        deleteTrain(train.id);
-                        toast.success("Train removed");
+                      className="rounded-xl border-rose-500/30 text-rose-400 hover:bg-rose-500/10"
+                      onClick={async () => {
+                        try {
+                          await deleteTrain(train.id);
+                          toast.success("Train removed");
+                        } catch (err: any) {
+                          toast.error(err.message || "Failed to remove train.");
+                        }
                       }}
                     >
                       <Trash2 className="size-4" />
@@ -240,65 +293,152 @@ function AdminConsole() {
           })}
         </TabsContent>
 
-        <TabsContent value="bookings" className="mt-6 space-y-3">
-          {state.bookings.length === 0 && (
-            <p className="rounded-2xl border border-dashed border-border py-12 text-center text-sm text-muted-foreground">
-              No bookings on the chart yet.
+        <TabsContent value="bookings" className="mt-6 space-y-4">
+          <div className="flex flex-wrap items-center justify-between gap-4 glass-card p-4 rounded-xl border border-[#4cd7f6]/20 mb-4">
+            <div>
+              <h3 className="text-base font-bold text-white">Passenger Reservations Chart</h3>
+              <p className="text-xs text-[#909097]">
+                View individual passenger bookings, assigned seats, berth allocations, and live queue status.
+              </p>
+            </div>
+            <div className="font-mono text-xs font-bold text-[#4cd7f6] bg-[#4cd7f6]/10 px-3 py-1.5 rounded-lg border border-[#4cd7f6]/30">
+              Total Bookings: {state.bookings.length}
+            </div>
+          </div>
+
+          {state.bookings.length === 0 ? (
+            <p className="rounded-2xl border border-dashed border-[#909097]/30 py-12 text-center text-sm text-[#909097]">
+              No reservations recorded on the passenger chart yet.
             </p>
-          )}
-          {state.bookings.map((b) => {
-            const train = state.trains.find((t) => t.id === b.trainId);
-            return (
-              <div
-                key={b.id}
-                className="glass-panel flex flex-wrap items-center gap-4 rounded-2xl p-4"
-              >
-                <div className="min-w-48">
-                  <p className="font-mono text-xs text-muted-foreground">
-                    {b.id} · PNR {b.pnr}
-                  </p>
-                  <p className="font-semibold">{b.passengerName}</p>
-                  <p className="text-sm text-muted-foreground">
-                    {train?.name ?? "—"} · {b.age} · {b.gender} · {b.preference}
-                  </p>
-                </div>
-                <Badge
-                  className={
-                    b.status === "CONFIRMED"
-                      ? "bg-teal/15 text-teal-deep hover:bg-teal/15"
-                      : b.status === "RAC"
-                        ? "bg-amber-500/15 text-amber-700 hover:bg-amber-500/15"
-                        : b.status === "WAITLIST"
-                          ? "bg-rose-500/15 text-rose-700 hover:bg-rose-500/15"
-                          : "bg-muted text-muted-foreground hover:bg-muted"
-                  }
-                >
-                  {b.status}
-                </Badge>
-                <p className="text-sm text-muted-foreground">
-                  {b.status === "CONFIRMED"
-                    ? `Seat ${b.seatNumber} · ${b.berth}`
-                    : b.status === "CANCELLED"
-                      ? "—"
-                      : `Position ${b.queuePosition}`}
-                </p>
-                {b.status !== "CANCELLED" && (
-                  <Button
-                    variant="ghost"
-                    className="ml-auto text-destructive hover:text-destructive"
-                    onClick={() => {
-                      cancel(b.id);
-                      toast.success("Booking cancelled & queues promoted");
-                    }}
-                  >
-                    Cancel
-                  </Button>
-                )}
+          ) : (
+            <div className="glass-card rounded-2xl overflow-hidden border border-[#4cd7f6]/20 shadow-xl">
+              <div className="overflow-x-auto">
+                <table className="w-full text-left border-collapse">
+                  <thead>
+                    <tr className="bg-[#171c1f] border-b border-[#909097]/20 font-mono text-[11px] font-bold text-[#4cd7f6] uppercase tracking-wider">
+                      <th className="py-3.5 px-4">Passenger Name</th>
+                      <th className="py-3.5 px-4">PNR</th>
+                      <th className="py-3.5 px-4">Train</th>
+                      <th className="py-3.5 px-4">Route</th>
+                      <th className="py-3.5 px-4">Journey Date</th>
+                      <th className="py-3.5 px-4">Class</th>
+                      <th className="py-3.5 px-4">Seat / Berth</th>
+                      <th className="py-3.5 px-4">Status</th>
+                      <th className="py-3.5 px-4">Fare</th>
+                      <th className="py-3.5 px-4 text-right">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-[#909097]/15 text-xs font-medium">
+                    {state.bookings.map((b) => {
+                      const train = state.trains.find((t) => t.id === b.trainId);
+                      return (
+                        <tr key={b.id} className="hover:bg-[#171c1f]/50 transition-colors">
+                          {/* Passenger */}
+                          <td className="py-3.5 px-4">
+                            <span className="font-bold text-white block">{b.passengerName}</span>
+                            <span className="font-mono text-[11px] text-[#909097]">
+                              {b.age} yrs · {b.gender}
+                            </span>
+                          </td>
+
+                          {/* PNR */}
+                          <td className="py-3.5 px-4 font-mono font-bold text-[#4cd7f6]">
+                            {b.pnr}
+                          </td>
+
+                          {/* Train */}
+                          <td className="py-3.5 px-4">
+                            <span className="font-bold text-white block">{train?.name ?? "Express"}</span>
+                            <span className="font-mono text-[11px] text-[#909097]">{train?.number}</span>
+                          </td>
+
+                          {/* Route */}
+                          <td className="py-3.5 px-4 font-mono text-[11px] text-[#dfe3e7]">
+                            {b.fromStation || train?.from} → {b.toStation || train?.to}
+                          </td>
+
+                          {/* Date */}
+                          <td className="py-3.5 px-4 font-mono text-[11px] text-[#909097]">
+                            {b.journeyDate || "Today"}
+                          </td>
+
+                          {/* Class */}
+                          <td className="py-3.5 px-4">
+                            <Badge variant="outline" className="text-[10px] font-mono border-[#909097]/30 text-[#dfe3e7]">
+                              Executive AC
+                            </Badge>
+                          </td>
+
+                          {/* Seat / Berth */}
+                          <td className="py-3.5 px-4 font-mono">
+                            {b.status === "CONFIRMED" ? (
+                              <span className="text-[#4cd7f6] font-bold">
+                                Seat {b.seatNumber} ({b.berth})
+                              </span>
+                            ) : b.status === "CANCELLED" ? (
+                              <span className="text-[#909097]">Cancelled</span>
+                            ) : (
+                              <span className="text-amber-300 font-bold">
+                                Queue #{b.queuePosition} ({b.preference})
+                              </span>
+                            )}
+                          </td>
+
+                          {/* Status */}
+                          <td className="py-3.5 px-4">
+                            <Badge
+                              className={`font-mono text-[10px] font-bold ${
+                                b.status === "CONFIRMED"
+                                  ? "bg-[#4cd7f6]/20 text-[#4cd7f6] border border-[#4cd7f6]/40"
+                                  : b.status === "RAC"
+                                    ? "bg-amber-500/20 text-amber-300 border border-amber-500/40"
+                                    : b.status === "WAITLIST"
+                                      ? "bg-rose-500/20 text-rose-300 border border-rose-500/40"
+                                      : "bg-[#909097]/20 text-[#909097]"
+                              }`}
+                            >
+                              {b.status}
+                            </Badge>
+                          </td>
+
+                          {/* Fare */}
+                          <td className="py-3.5 px-4 font-display font-extrabold text-white">
+                            ₹{b.fare.toLocaleString("en-IN")}
+                          </td>
+
+                          {/* Actions */}
+                          <td className="py-3.5 px-4 text-right">
+                            {b.status !== "CANCELLED" && (
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="text-rose-400 hover:text-rose-300 hover:bg-rose-500/10 font-bold h-8 px-2.5 rounded-lg text-xs"
+                                onClick={async () => {
+                                  await cancel(b.id);
+                                  toast.success("Booking cancelled & queue promoted");
+                                }}
+                              >
+                                Cancel
+                              </Button>
+                            )}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
               </div>
-            );
-          })}
+            </div>
+          )}
         </TabsContent>
       </Tabs>
+
+      <TrainDetailsModal
+        train={detailsTrain}
+        open={detailsOpen}
+        onOpenChange={setDetailsOpen}
+      />
     </ConsoleShell>
   );
 }
+
