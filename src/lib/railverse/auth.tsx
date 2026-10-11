@@ -27,21 +27,38 @@ interface AuthCtx {
 
 const AuthContext = createContext<AuthCtx | null>(null);
 
-function getLocalUsers(): Record<string, { id: string; name: string; email: string; password: string; role: Role }> {
+function getLocalUsers(): Record<
+  string,
+  { id: string; name: string; email: string; password: string; role: Role }
+> {
   try {
-    const raw = typeof window !== "undefined" ? localStorage.getItem("railverse_local_users") : null;
+    const raw =
+      typeof window !== "undefined"
+        ? localStorage.getItem("travia_local_users") || localStorage.getItem("railverse_local_users")
+        : null;
     return raw ? JSON.parse(raw) : {};
   } catch {
     return {};
   }
 }
 
-function saveLocalUser(u: { id: string; name: string; email: string; password: string; role: Role }) {
+function saveLocalUser(u: {
+  id: string;
+  name: string;
+  email: string;
+  password: string;
+  role: Role;
+}) {
   try {
     if (typeof window === "undefined") return;
     const users = getLocalUsers();
     users[u.email] = u;
+    localStorage.setItem("travia_local_users", JSON.stringify(users));
     localStorage.setItem("railverse_local_users", JSON.stringify(users));
+    localStorage.setItem(
+      "travia_local_user",
+      JSON.stringify({ id: u.id, name: u.name, email: u.email, role: u.role }),
+    );
     localStorage.setItem(
       "railverse_local_user",
       JSON.stringify({ id: u.id, name: u.name, email: u.email, role: u.role }),
@@ -51,7 +68,10 @@ function saveLocalUser(u: { id: string; name: string; email: string; password: s
 
 function getLocalActiveUser(): AuthUser | null {
   try {
-    const raw = typeof window !== "undefined" ? localStorage.getItem("railverse_local_user") : null;
+    const raw =
+      typeof window !== "undefined"
+        ? localStorage.getItem("travia_local_user") || localStorage.getItem("railverse_local_user")
+        : null;
     return raw ? JSON.parse(raw) : null;
   } catch {
     return null;
@@ -83,10 +103,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // Fallback: check user metadata from auth.getUser() and insert profile
       const { data: userData } = await supabase.auth.getUser();
       const meta: Record<string, any> = userData?.user?.user_metadata || {};
-      const rawRole = typeof meta['role'] === 'string' ? meta['role'] : "PASSENGER";
+      const rawRole = typeof meta["role"] === "string" ? meta["role"] : "PASSENGER";
       const metaRole = rawRole.toUpperCase();
       const role: Role = metaRole === "ADMIN" ? "admin" : "passenger";
-      const name = typeof meta['name'] === 'string' ? meta['name'] : email.split("@")[0] || "User";
+      const name = typeof meta["name"] === "string" ? meta["name"] : email.split("@")[0] || "User";
 
       await supabase.from("profiles").upsert({
         id: userId,
@@ -111,7 +131,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     async function initSession() {
       try {
-        const { data: { session } } = await supabase.auth.getSession();
+        const {
+          data: { session },
+        } = await supabase.auth.getSession();
         if (session?.user && mounted) {
           const profile = await fetchProfile(session.user.id, session.user.email || "");
           if (mounted && profile) {
@@ -144,7 +166,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         } else if (event === "SIGNED_OUT") {
           if (mounted) {
             setUser(null);
-            if (typeof window !== "undefined") localStorage.removeItem("railverse_local_user");
+            if (typeof window !== "undefined") {
+              localStorage.removeItem("travia_local_user");
+              localStorage.removeItem("railverse_local_user");
+            }
           }
         }
       });
@@ -162,14 +187,30 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const normalizedEmail = email.trim().toLowerCase();
       const uppercaseRole = role === "admin" ? "ADMIN" : "PASSENGER";
 
+      if (!normalizedEmail || !password) {
+        return { ok: false, message: "Email and password are required." };
+      }
+      if (password.length < 6) {
+        return { ok: false, message: "Password must be at least 6 characters long." };
+      }
+
+      // Check if user already registered locally
+      const localUsers = getLocalUsers();
+      if (localUsers[normalizedEmail]) {
+        return { ok: false, message: "An account with this email already exists. Please log in." };
+      }
+
       // 1. Try Supabase cloud first if available
       try {
-        const { data: rpcData, error: rpcError } = await supabase.rpc("signup_without_confirmation" as any, {
-          p_email: normalizedEmail,
-          p_password: password,
-          p_name: name.trim(),
-          p_role: uppercaseRole,
-        });
+        const { data: rpcData, error: rpcError } = await supabase.rpc(
+          "signup_without_confirmation" as any,
+          {
+            p_email: normalizedEmail,
+            p_password: password,
+            p_name: name.trim(),
+            p_role: uppercaseRole,
+          },
+        );
 
         if (!rpcError && rpcData) {
           const { data: signInData, error: signInErr } = await supabase.auth.signInWithPassword({
@@ -186,8 +227,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
               role,
             };
             setUser(authUser);
-            saveLocalUser({ id: authUser.id, name: authUser.name, email: authUser.email, password, role: authUser.role });
+            saveLocalUser({
+              id: authUser.id,
+              name: authUser.name,
+              email: authUser.email,
+              password,
+              role: authUser.role,
+            });
             return { ok: true, message: `Welcome aboard, ${name.trim()}.` };
+          }
+        } else if (rpcError) {
+          if (
+            rpcError.message.toLowerCase().includes("already exists") ||
+            rpcError.message.toLowerCase().includes("user with email")
+          ) {
+            return { ok: false, message: rpcError.message };
           }
         }
       } catch {
@@ -214,7 +268,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             role,
           };
           setUser(authUser);
-          saveLocalUser({ id: authUser.id, name: authUser.name, email: authUser.email, password, role });
+          saveLocalUser({
+            id: authUser.id,
+            name: authUser.name,
+            email: authUser.email,
+            password,
+            role,
+          });
           return { ok: true, message: `Welcome aboard, ${name.trim()}.` };
         } else if (error) {
           if (
@@ -228,7 +288,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         // Supabase network load error
       }
 
-      // 2. Seamless local fallback when Supabase connection/URL is offline or unreachable
+      // 2. Local registration fallback when Supabase connection/URL is offline or unreachable
       const localId = `usr_${Math.random().toString(36).slice(2, 9)}`;
       const authUser: AuthUser = {
         id: localId,
@@ -246,6 +306,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const login = useCallback<AuthCtx["login"]>(
     async (email, password, role) => {
       const normalizedEmail = email.trim().toLowerCase();
+      if (!normalizedEmail || !password) {
+        return { ok: false, message: "Email and password are required." };
+      }
 
       try {
         const { data, error } = await supabase.auth.signInWithPassword({
@@ -261,52 +324,79 @@ export function AuthProvider({ children }: { children: ReactNode }) {
               return { ok: false, message: `Invalid credentials for ${role} role.` };
             }
             setUser(profile);
-            saveLocalUser({ id: profile.id, name: profile.name, email: profile.email, password, role: profile.role });
+            saveLocalUser({
+              id: profile.id,
+              name: profile.name,
+              email: profile.email,
+              password,
+              role: profile.role,
+            });
             return { ok: true, message: `Welcome back, ${profile.name}.` };
           }
         } else if (error) {
-          if (error.message.toLowerCase().includes("invalid login credentials")) {
+          const msg = error.message.toLowerCase();
+          if (
+            msg.includes("invalid login credentials") ||
+            msg.includes("invalid credential")
+          ) {
             const localUsers = getLocalUsers();
             const existing = localUsers[normalizedEmail];
-            if (existing && existing.password === password) {
+            if (existing) {
+              if (existing.password !== password) {
+                return { ok: false, message: "Invalid email or password." };
+              }
               if (existing.role !== role) {
                 return { ok: false, message: `Invalid credentials for ${role} role.` };
               }
-              const authUser: AuthUser = { id: existing.id, name: existing.name, email: existing.email, role: existing.role };
+              const authUser: AuthUser = {
+                id: existing.id,
+                name: existing.name,
+                email: existing.email,
+                role: existing.role,
+              };
               setUser(authUser);
-              if (typeof window !== "undefined") localStorage.setItem("railverse_local_user", JSON.stringify(authUser));
+              if (typeof window !== "undefined") {
+                localStorage.setItem("travia_local_user", JSON.stringify(authUser));
+                localStorage.setItem("railverse_local_user", JSON.stringify(authUser));
+              }
               return { ok: true, message: `Welcome back, ${authUser.name}.` };
             }
-            return { ok: false, message: error.message };
+            return { ok: false, message: "Invalid email or password." };
           }
         }
       } catch {
         // Supabase network error
       }
 
-      // Local storage fallback for login
+      // Local storage check for login
       const localUsers = getLocalUsers();
       const existing = localUsers[normalizedEmail];
       if (existing) {
         if (existing.password !== password) {
-          return { ok: false, message: "Invalid password." };
+          return { ok: false, message: "Invalid email or password." };
         }
         if (existing.role !== role) {
           return { ok: false, message: `Invalid credentials for ${role} role.` };
         }
-        const authUser: AuthUser = { id: existing.id, name: existing.name, email: existing.email, role: existing.role };
+        const authUser: AuthUser = {
+          id: existing.id,
+          name: existing.name,
+          email: existing.email,
+          role: existing.role,
+        };
         setUser(authUser);
-        if (typeof window !== "undefined") localStorage.setItem("railverse_local_user", JSON.stringify(authUser));
+        if (typeof window !== "undefined") {
+          localStorage.setItem("travia_local_user", JSON.stringify(authUser));
+          localStorage.setItem("railverse_local_user", JSON.stringify(authUser));
+        }
         return { ok: true, message: `Welcome back, ${authUser.name}.` };
       }
 
-      // Auto-create local session for smooth experience
-      const localId = `usr_${Math.random().toString(36).slice(2, 9)}`;
-      const newName = normalizedEmail.split("@")[0] || "User";
-      const authUser: AuthUser = { id: localId, name: newName, email: normalizedEmail, role };
-      saveLocalUser({ id: localId, name: newName, email: normalizedEmail, password, role });
-      setUser(authUser);
-      return { ok: true, message: `Welcome back, ${newName}.` };
+      // Reject non-existent user - do NOT automatically register users during login
+      return {
+        ok: false,
+        message: "Invalid email or password. Please create an account if you are a new user.",
+      };
     },
     [fetchProfile],
   );
@@ -315,7 +405,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       await supabase.auth.signOut();
     } catch {}
-    if (typeof window !== "undefined") localStorage.removeItem("railverse_local_user");
+    if (typeof window !== "undefined") {
+      localStorage.removeItem("travia_local_user");
+      localStorage.removeItem("railverse_local_user");
+    }
     setUser(null);
   }, []);
 

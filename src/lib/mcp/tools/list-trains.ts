@@ -5,7 +5,7 @@ export default defineTool({
   name: "list_trains",
   title: "List trains",
   description:
-    "List the RailVerse timetable: train number, name, route, timings, fare, and seat/RAC/waitlist capacity.",
+    "List the Travia timetable: train number, name, route, timings, fare, and seat/RAC/waitlist capacity.",
   inputSchema: {},
   annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
   handler: () => {

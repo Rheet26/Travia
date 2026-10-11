@@ -16,6 +16,7 @@ import { Route as McpRouteImport } from './routes/mcp'
 import { Route as PassengerRouteImport } from './routes/passenger'
 import { Route as Char91DotmcpChar93ListToolsRouteImport } from './routes/[.mcp]/list-tools'
 import { Route as Char91DotwellKnownChar93OauthProtectedResourceRouteImport } from './routes/[.well-known]/oauth-protected-resource'
+import { Route as ApiGenerateTicketPdfRouteImport } from './routes/api.generate-ticket-pdf'
 import { Route as LoginRoleRouteImport } from './routes/login.$role'
 import { Route as DotlovableOauthConsentRouteImport } from './routes/[.]lovable.oauth.consent'
 import { Route as Char91DotmcpChar93InvokeToolToolRouteImport } from './routes/[.mcp]/invoke-tool/$tool'
@@ -57,6 +58,11 @@ const Char91DotwellKnownChar93OauthProtectedResourceRoute =
     path: '/.well-known/oauth-protected-resource',
     getParentRoute: () => rootRouteImport,
   } as any)
+const ApiGenerateTicketPdfRoute = ApiGenerateTicketPdfRouteImport.update({
+  id: '/api/generate-ticket-pdf',
+  path: '/api/generate-ticket-pdf',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const LoginRoleRoute = LoginRoleRouteImport.update({
   id: '/login/$role',
   path: '/login/$role',
@@ -82,6 +88,7 @@ export interface FileRoutesByFullPath {
   '/passenger': typeof PassengerRoute
   '/.mcp/list-tools': typeof Char91DotmcpChar93ListToolsRoute
   '/.well-known/oauth-protected-resource': typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
+  '/api/generate-ticket-pdf': typeof ApiGenerateTicketPdfRoute
   '/login/$role': typeof LoginRoleRoute
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
   '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
@@ -94,6 +101,7 @@ export interface FileRoutesByTo {
   '/passenger': typeof PassengerRoute
   '/.mcp/list-tools': typeof Char91DotmcpChar93ListToolsRoute
   '/.well-known/oauth-protected-resource': typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
+  '/api/generate-ticket-pdf': typeof ApiGenerateTicketPdfRoute
   '/login/$role': typeof LoginRoleRoute
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
   '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
@@ -107,6 +115,7 @@ export interface FileRoutesById {
   '/passenger': typeof PassengerRoute
   '/.mcp/list-tools': typeof Char91DotmcpChar93ListToolsRoute
   '/.well-known/oauth-protected-resource': typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
+  '/api/generate-ticket-pdf': typeof ApiGenerateTicketPdfRoute
   '/login/$role': typeof LoginRoleRoute
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
   '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
@@ -121,6 +130,7 @@ export interface FileRouteTypes {
     | '/passenger'
     | '/.mcp/list-tools'
     | '/.well-known/oauth-protected-resource'
+    | '/api/generate-ticket-pdf'
     | '/login/$role'
     | '/.lovable/oauth/consent'
     | '/.mcp/invoke-tool/$tool'
@@ -133,6 +143,7 @@ export interface FileRouteTypes {
     | '/passenger'
     | '/.mcp/list-tools'
     | '/.well-known/oauth-protected-resource'
+    | '/api/generate-ticket-pdf'
     | '/login/$role'
     | '/.lovable/oauth/consent'
     | '/.mcp/invoke-tool/$tool'
@@ -145,6 +156,7 @@ export interface FileRouteTypes {
     | '/passenger'
     | '/.mcp/list-tools'
     | '/.well-known/oauth-protected-resource'
+    | '/api/generate-ticket-pdf'
     | '/login/$role'
     | '/.lovable/oauth/consent'
     | '/.mcp/invoke-tool/$tool'
@@ -158,6 +170,7 @@ export interface RootRouteChildren {
   PassengerRoute: typeof PassengerRoute
   Char91DotmcpChar93ListToolsRoute: typeof Char91DotmcpChar93ListToolsRoute
   Char91DotwellKnownChar93OauthProtectedResourceRoute: typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
+  ApiGenerateTicketPdfRoute: typeof ApiGenerateTicketPdfRoute
   LoginRoleRoute: typeof LoginRoleRoute
   DotlovableOauthConsentRoute: typeof DotlovableOauthConsentRoute
   Char91DotmcpChar93InvokeToolToolRoute: typeof Char91DotmcpChar93InvokeToolToolRoute
@@ -214,6 +227,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof Char91DotwellKnownChar93OauthProtectedResourceRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/generate-ticket-pdf': {
+      id: '/api/generate-ticket-pdf'
+      path: '/api/generate-ticket-pdf'
+      fullPath: '/api/generate-ticket-pdf'
+      preLoaderRoute: typeof ApiGenerateTicketPdfRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/login/$role': {
       id: '/login/$role'
       path: '/login/$role'
@@ -247,6 +267,7 @@ const rootRouteChildren: RootRouteChildren = {
   Char91DotmcpChar93ListToolsRoute: Char91DotmcpChar93ListToolsRoute,
   Char91DotwellKnownChar93OauthProtectedResourceRoute:
     Char91DotwellKnownChar93OauthProtectedResourceRoute,
+  ApiGenerateTicketPdfRoute: ApiGenerateTicketPdfRoute,
   LoginRoleRoute: LoginRoleRoute,
   DotlovableOauthConsentRoute: DotlovableOauthConsentRoute,
   Char91DotmcpChar93InvokeToolToolRoute: Char91DotmcpChar93InvokeToolToolRoute,

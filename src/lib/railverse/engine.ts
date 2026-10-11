@@ -1,18 +1,9 @@
 import { KAGGLE_TRAIN_DATASET } from "./dataset";
-import type {
-  Berth,
-  BerthPreference,
-  Booking,
-  Gender,
-  RailState,
-  Train,
-  TrainStop,
-} from "./types";
+import type { Berth, BerthPreference, Booking, Gender, RailState, Train, TrainStop } from "./types";
 
 export const BERTHS: Berth[] = ["Lower", "Middle", "Upper"];
 
-export const berthForSeat = (seatNumber: number): Berth =>
-  BERTHS[(seatNumber - 1) % 3] as Berth;
+export const berthForSeat = (seatNumber: number): Berth => BERTHS[(seatNumber - 1) % 3] as Berth;
 
 const rid = () => Math.random().toString(36).slice(2, 8).toUpperCase();
 
@@ -22,17 +13,19 @@ export function calculateDuration(dep: string, arr: string, stops?: TrainStop[])
   if (stops && stops.length >= 2) {
     const first = stops[0];
     const last = stops[stops.length - 1];
-    const dayDiff = (last.day || 1) - (first.day || 1);
-    const [depH, depM] = dep.split(":").map(Number);
-    const [arrH, arrM] = arr.split(":").map(Number);
-    if (depH != null && depM != null && arrH != null && arrM != null) {
-      let depMins = depH * 60 + depM;
-      let arrMins = dayDiff * 24 * 60 + arrH * 60 + arrM;
-      let diff = arrMins - depMins;
-      if (diff < 0) diff += 24 * 60;
-      const h = Math.floor(diff / 60);
-      const m = diff % 60;
-      return `${h}h ${m}m`;
+    if (first && last) {
+      const dayDiff = (last.day || 1) - (first.day || 1);
+      const [depH, depM] = dep.split(":").map(Number);
+      const [arrH, arrM] = arr.split(":").map(Number);
+      if (depH != null && depM != null && arrH != null && arrM != null) {
+        let depMins = depH * 60 + depM;
+        let arrMins = dayDiff * 24 * 60 + arrH * 60 + arrM;
+        let diff = arrMins - depMins;
+        if (diff < 0) diff += 24 * 60;
+        const h = Math.floor(diff / 60);
+        const m = diff % 60;
+        return `${h}h ${m}m`;
+      }
     }
   }
 
@@ -58,7 +51,10 @@ export const defaultState = (): RailState => {
     seenNumbers.add(t.trainNumber);
 
     const origin = t.trainRoute[0]?.stationName || t.route.split("→")[0]?.trim() || "Origin";
-    const dest = t.trainRoute[t.trainRoute.length - 1]?.stationName || t.route.split("→")[1]?.trim() || "Destination";
+    const dest =
+      t.trainRoute[t.trainRoute.length - 1]?.stationName ||
+      t.route.split("→")[1]?.trim() ||
+      "Destination";
     const duration = calculateDuration(t.departureTime, t.arrivalTime, t.trainRoute);
 
     trains.push(
@@ -116,9 +112,7 @@ const allocateSeat = (
   for (let s = 1; s <= train.seats; s++) if (!taken.has(s)) free.push(s);
   if (free.length === 0) return null;
   const preferred =
-    preference !== "No Preference"
-      ? free.find((s) => berthForSeat(s) === preference)
-      : undefined;
+    preference !== "No Preference" ? free.find((s) => berthForSeat(s) === preference) : undefined;
   const seatNumber = preferred ?? (free[0] as number);
   return { seatNumber, berth: berthForSeat(seatNumber) };
 };
@@ -127,8 +121,7 @@ const renumberQueues = (state: RailState, trainId: string): RailState => {
   let racPos = 0;
   let wlPos = 0;
   const bookings = state.bookings.map((b) => {
-    if (b.trainId !== trainId || b.status === "CANCELLED" || b.status === "CONFIRMED")
-      return b;
+    if (b.trainId !== trainId || b.status === "CANCELLED" || b.status === "CONFIRMED") return b;
     if (b.status === "RAC") return { ...b, queuePosition: ++racPos };
     return { ...b, queuePosition: ++wlPos };
   });
@@ -145,9 +138,7 @@ export const promote = (state: RailState, trainId: string): RailState => {
   for (;;) {
     const counts = countsFor(next, train);
     if (counts.seatsLeft <= 0) break;
-    const idx = next.bookings.findIndex(
-      (b) => b.trainId === trainId && b.status === "RAC",
-    );
+    const idx = next.bookings.findIndex((b) => b.trainId === trainId && b.status === "RAC");
     if (idx === -1) break;
     const candidate = next.bookings[idx] as Booking;
     const seat = allocateSeat(train, next.bookings, candidate.preference);
@@ -165,9 +156,7 @@ export const promote = (state: RailState, trainId: string): RailState => {
   for (;;) {
     const counts = countsFor(next, train);
     if (counts.racLeft <= 0) break;
-    const idx = next.bookings.findIndex(
-      (b) => b.trainId === trainId && b.status === "WAITLIST",
-    );
+    const idx = next.bookings.findIndex((b) => b.trainId === trainId && b.status === "WAITLIST");
     if (idx === -1) break;
     const candidate = next.bookings[idx] as Booking;
     next.bookings[idx] = { ...candidate, status: "RAC" };
@@ -236,7 +225,10 @@ export function calculateSegmentDetails(
   const segmentStops = stops.slice(fromIdx, toIdx + 1);
   const duration = calculateDuration(boardingTime, arrivalTime, segmentStops);
 
-  const totalDist = Math.max(1, (stops[stops.length - 1]?.distance || 1) - (stops[0]?.distance || 0));
+  const totalDist = Math.max(
+    1,
+    (stops[stops.length - 1]?.distance || 1) - (stops[0]?.distance || 0),
+  );
   const distRatio = distance / totalDist;
   const farePerPassenger = Math.max(150, Math.round(train.fare * Math.max(0.4, distRatio)));
 
@@ -260,6 +252,7 @@ export interface PassengerInput {
 
 export interface BookInput {
   trainId: string;
+  userId?: string | undefined;
   journeyDate?: string;
   fromStation?: string;
   toStation?: string;
@@ -291,8 +284,7 @@ export const book = (
           },
         ];
 
-  const journeyDate =
-    input.journeyDate || new Date().toISOString().split("T")[0];
+  const journeyDate = input.journeyDate || new Date().toISOString().split("T")[0];
 
   const counts = countsFor(state, train);
   const totalCapacityLeft = counts.seatsLeft + counts.racLeft + counts.wlLeft;
@@ -329,7 +321,12 @@ export const book = (
 
   const allocatedMap = new Map<
     number,
-    { status: "CONFIRMED" | "RAC" | "WAITLIST"; seatNumber: number | null; berth: Berth | null; queuePosition: number | null }
+    {
+      status: "CONFIRMED" | "RAC" | "WAITLIST";
+      seatNumber: number | null;
+      berth: Berth | null;
+      queuePosition: number | null;
+    }
   >();
 
   let currentRac = counts.rac;
@@ -357,7 +354,7 @@ export const book = (
         berth: berthForSeat(seatNumber),
         queuePosition: null,
       });
-    } else if (counts.racTotal > currentRac) {
+    } else if (train.racTotal > currentRac) {
       currentRac++;
       allocatedMap.set(passenger.originalIndex, {
         status: "RAC",
@@ -381,6 +378,7 @@ export const book = (
     return {
       id: `BK-${Date.now().toString(36).toUpperCase()}-${rid()}-${idx + 1}`,
       pnr,
+      userId: input.userId,
       trainId: train.id,
       passengerName: p.passengerName.trim(),
       age: p.age,

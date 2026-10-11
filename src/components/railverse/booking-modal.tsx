@@ -14,7 +14,9 @@ import {
   MapPin,
   Clock,
   Navigation,
+  FileDown,
 } from "lucide-react";
+import { downloadTicketPDF } from "@/lib/railverse/pdf-generator";
 import {
   Dialog,
   DialogContent,
@@ -34,7 +36,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import type { BerthPreference, Booking, Gender, PassengerInput, Train } from "@/lib/railverse/types";
+import type {
+  BerthPreference,
+  Booking,
+  Gender,
+  PassengerInput,
+  Train,
+} from "@/lib/railverse/types";
 import { calculateSegmentDetails } from "@/lib/railverse/engine";
 
 export interface BookingFormValues {
@@ -86,7 +94,7 @@ export function BookingModal({
   ) => Promise<{ booking: Booking | null; bookings?: Booking[]; message: string }>;
   onViewTickets?: () => void;
 }) {
-  const todayStr = useMemo(() => new Date().toISOString().split("T")[0], []);
+  const todayStr = useMemo(() => new Date().toISOString().split("T")[0]!, []);
 
   const [step, setStep] = useState<1 | 2 | 3>(1);
   const [journeyDate, setJourneyDate] = useState<string>(todayStr);
@@ -118,8 +126,20 @@ export function BookingModal({
   const routeStops = useMemo(() => {
     if (train?.routeStops && train.routeStops.length >= 2) return train.routeStops;
     return [
-      { stationName: train?.from || "Origin", arrives: "Source", departs: train?.departure || "06:00", distance: 0, day: 1 },
-      { stationName: train?.to || "Destination", arrives: train?.arrival || "14:00", departs: "Destination", distance: 500, day: 1 },
+      {
+        stationName: train?.from || "Origin",
+        arrives: "Source",
+        departs: train?.departure || "06:00",
+        distance: 0,
+        day: 1,
+      },
+      {
+        stationName: train?.to || "Destination",
+        arrives: train?.arrival || "14:00",
+        departs: "Destination",
+        distance: 500,
+        day: 1,
+      },
     ];
   }, [train]);
 
@@ -163,7 +183,7 @@ export function BookingModal({
 
   const resetForm = () => {
     setStep(1);
-    setJourneyDate(new Date().toISOString().split("T")[0]);
+    setJourneyDate(new Date().toISOString().split("T")[0]!);
     if (train) {
       setFromStation(train.routeStops?.[0]?.stationName || train.from || "");
       setToStation(train.routeStops?.[train.routeStops.length - 1]?.stationName || train.to || "");
@@ -187,9 +207,7 @@ export function BookingModal({
     field: K,
     value: PassengerInput[K],
   ) => {
-    setPassengers((prev) =>
-      prev.map((p, i) => (i === index ? { ...p, [field]: value } : p)),
-    );
+    setPassengers((prev) => prev.map((p, i) => (i === index ? { ...p, [field]: value } : p)));
   };
 
   const addPassenger = () => {
@@ -299,15 +317,15 @@ export function BookingModal({
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-lg bg-[#0f1417] text-[#dfe3e7] border border-[#4cd7f6]/30 shadow-[0_0_30px_rgba(76,215,246,0.15)]">
+      <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-lg bg-card dark:bg-[#0f1417] text-card-foreground dark:text-[#dfe3e7] border border-border/50 dark:border-[#4cd7f6]/30 shadow-2xl">
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2 text-xl font-bold text-white">
+          <DialogTitle className="flex items-center gap-2 text-xl font-bold text-foreground dark:text-white">
             <Ticket className="size-5 text-[#4cd7f6]" />
             {step === 1 && "Select Segment & Passengers"}
             {step === 2 && "Review Booking Summary"}
             {step === 3 && "Booking Confirmed!"}
           </DialogTitle>
-          <DialogDescription className="text-xs text-[#909097]">
+          <DialogDescription className="text-xs text-muted-foreground dark:text-[#909097]">
             {train
               ? `${train.number} · ${train.name} (${train.from} → ${train.to})`
               : "Select a train to continue."}
@@ -316,18 +334,30 @@ export function BookingModal({
 
         {/* Step Indicator */}
         <div className="flex items-center justify-between border-b border-[#909097]/20 pb-3 text-xs font-mono font-semibold">
-          <span className={`flex items-center gap-1.5 ${step >= 1 ? "text-[#4cd7f6]" : "text-[#909097]"}`}>
-            <span className="flex size-5 items-center justify-center rounded-full bg-[#4cd7f6]/20 text-[11px] font-bold">1</span>
+          <span
+            className={`flex items-center gap-1.5 ${step >= 1 ? "text-[#4cd7f6]" : "text-[#909097]"}`}
+          >
+            <span className="flex size-5 items-center justify-center rounded-full bg-[#4cd7f6]/20 text-[11px] font-bold">
+              1
+            </span>
             Segment & Passengers
           </span>
           <span className="text-muted-foreground">→</span>
-          <span className={`flex items-center gap-1 ${step >= 2 ? "text-teal-deep" : "text-muted-foreground"}`}>
-            <span className="flex size-5 items-center justify-center rounded-full bg-teal/15 text-[11px]">2</span>
+          <span
+            className={`flex items-center gap-1 ${step >= 2 ? "text-teal-deep" : "text-muted-foreground"}`}
+          >
+            <span className="flex size-5 items-center justify-center rounded-full bg-teal/15 text-[11px]">
+              2
+            </span>
             Summary
           </span>
           <span className="text-muted-foreground">→</span>
-          <span className={`flex items-center gap-1 ${step === 3 ? "text-teal-deep" : "text-muted-foreground"}`}>
-            <span className="flex size-5 items-center justify-center rounded-full bg-teal/15 text-[11px]">3</span>
+          <span
+            className={`flex items-center gap-1 ${step === 3 ? "text-teal-deep" : "text-muted-foreground"}`}
+          >
+            <span className="flex size-5 items-center justify-center rounded-full bg-teal/15 text-[11px]">
+              3
+            </span>
             Ticket Confirmed
           </span>
         </div>
@@ -399,11 +429,15 @@ export function BookingModal({
                     <div className="flex items-center justify-between font-semibold text-teal-deep">
                       <span>⏱ Duration: {segmentDetails.duration}</span>
                       <span>📏 {segmentDetails.distance} km</span>
-                      <span>₹{segmentDetails.farePerPassenger} / passenger</span>
+                      <span className="text-[#38bdf8]">₹{segmentDetails.farePerPassenger} / passenger</span>
                     </div>
                     <div className="flex items-center justify-between text-[11px] text-muted-foreground pt-1 border-t border-teal/20">
-                      <span>Boarding: <strong>{segmentDetails.boardingTime}</strong></span>
-                      <span>Arrival: <strong>{segmentDetails.arrivalTime}</strong></span>
+                      <span>
+                        Boarding: <strong>{segmentDetails.boardingTime}</strong>
+                      </span>
+                      <span>
+                        Arrival: <strong>{segmentDetails.arrivalTime}</strong>
+                      </span>
                     </div>
                   </div>
                 )}
@@ -417,7 +451,10 @@ export function BookingModal({
                   </Label>
                   <div className="flex flex-wrap gap-1">
                     {trainRunningDays.map((d) => (
-                      <Badge key={d} className="bg-teal/15 text-teal-deep text-[10px] py-0 font-semibold">
+                      <Badge
+                        key={d}
+                        className="bg-teal/15 text-teal-deep text-[10px] py-0 font-semibold"
+                      >
                         {d}
                       </Badge>
                     ))}
@@ -440,9 +477,7 @@ export function BookingModal({
                       <span>📅</span> Selected: {formattedDateWithDay}
                     </span>
                     {!isRunningOnSelectedDate && (
-                      <span className="font-semibold text-destructive">
-                        ⚠️ Non-operating day
-                      </span>
+                      <span className="font-semibold text-destructive">⚠️ Non-operating day</span>
                     )}
                   </div>
                 )}
@@ -452,7 +487,8 @@ export function BookingModal({
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
                   <Label className="flex items-center gap-2 text-sm font-semibold">
-                    <Users className="size-4 text-teal-deep" /> Passenger Details ({passengers.length})
+                    <Users className="size-4 text-teal-deep" /> Passenger Details (
+                    {passengers.length})
                   </Label>
                   <Button
                     type="button"
@@ -559,7 +595,7 @@ export function BookingModal({
                 <span className="text-muted-foreground">
                   Total Fare ({passengers.length} passenger{passengers.length > 1 ? "s" : ""})
                 </span>
-                <span className="font-display text-lg font-bold text-navy">
+                <span className="font-display text-lg font-bold text-[#0284c7] dark:text-[#38bdf8]">
                   ₹{totalFare.toLocaleString("en-IN")}
                 </span>
               </div>
@@ -578,7 +614,7 @@ export function BookingModal({
               <div className="glass-panel rounded-xl p-4 space-y-3">
                 <div className="flex items-start justify-between">
                   <div>
-                    <span className="font-mono text-xs tracking-widest text-teal-deep font-semibold">
+                    <span className="font-mono text-xs tracking-widest text-[#0284c7] dark:text-teal-deep font-semibold">
                       {train?.number}
                     </span>
                     <h4 className="text-lg font-bold">{train?.name}</h4>
@@ -586,21 +622,24 @@ export function BookingModal({
                       Full Train Route: {train?.from} → {train?.to}
                     </p>
                   </div>
-                  <Badge className="bg-teal/15 text-teal-deep font-semibold hover:bg-teal/15">
+                  <Badge className="bg-[#0284c7]/15 dark:bg-teal/15 text-[#0284c7] dark:text-[#38bdf8] font-semibold hover:bg-[#0284c7]/20">
                     ₹{perPassengerFare} / seat
                   </Badge>
                 </div>
 
                 <div className="border-t border-border/50 pt-2 space-y-1.5">
-                  <div className="flex items-center gap-2 text-xs font-semibold text-teal-deep">
+                  <div className="flex items-center gap-2 text-xs font-semibold text-[#0284c7] dark:text-teal-deep">
                     <Navigation className="size-3.5" />
                     <span>
-                      Boarding Segment: {fromStation} ({segmentDetails?.boardingTime}) → {toStation} ({segmentDetails?.arrivalTime})
+                      Boarding Segment: {fromStation} ({segmentDetails?.boardingTime}) → {toStation}{" "}
+                      ({segmentDetails?.arrivalTime})
                     </span>
                   </div>
                   <div className="flex items-center justify-between text-[11px] text-muted-foreground">
                     <span>📅 Journey Date: {formattedDateWithDay}</span>
-                    <span>⏱ {segmentDetails?.duration} · {segmentDetails?.distance} km</span>
+                    <span>
+                      ⏱ {segmentDetails?.duration} · {segmentDetails?.distance} km
+                    </span>
                   </div>
                 </div>
               </div>
@@ -631,12 +670,12 @@ export function BookingModal({
               </div>
 
               {/* Smart Allocation Notice */}
-              <div className="rounded-xl border border-teal/30 bg-teal/5 p-3 text-xs text-muted-foreground flex items-start gap-2">
-                <Sparkles className="size-4 text-teal-deep shrink-0 mt-0.5" />
+              <div className="rounded-xl border border-[#0284c7]/30 dark:border-teal/30 bg-[#0284c7]/5 dark:bg-teal/5 p-3 text-xs text-muted-foreground flex items-start gap-2">
+                <Sparkles className="size-4 text-[#0284c7] dark:text-teal-deep shrink-0 mt-0.5" />
                 <p>
-                  <strong className="text-teal-deep font-semibold">Smart Allocation:</strong> Senior
-                  passengers (higher age) are automatically prioritized for Lower berth requests.
-                  If preferred berths are full, alternative open berths are automatically assigned.
+                  <strong className="text-[#0284c7] dark:text-teal-deep font-semibold">Smart Allocation:</strong> Senior
+                  passengers (higher age) are automatically prioritized for Lower berth requests. If
+                  preferred berths are full, alternative open berths are automatically assigned.
                 </p>
               </div>
 
@@ -644,7 +683,7 @@ export function BookingModal({
               <div className="glass-panel flex items-center justify-between rounded-xl p-4">
                 <div>
                   <p className="text-xs text-muted-foreground">Total Fare Payable</p>
-                  <p className="font-display text-2xl font-bold text-navy">
+                  <p className="font-display text-2xl font-bold text-[#0284c7] dark:text-[#38bdf8]">
                     ₹{totalFare.toLocaleString("en-IN")}
                   </p>
                 </div>
@@ -719,9 +758,9 @@ export function BookingModal({
                     </div>
 
                     {b.journeyDate && (
-                      <div className="text-[11px] text-teal-deep font-semibold flex items-center justify-between border-t border-border/30 pt-1">
-                        <span>📅 {formatJourneyDate(b.journeyDate)}</span>
-                        <span>₹{b.fare}</span>
+                      <div className="text-[11px] font-semibold flex items-center justify-between border-t border-border/30 pt-1">
+                        <span className="text-teal-deep">📅 {formatJourneyDate(b.journeyDate)}</span>
+                        <span className="text-[#38bdf8]">₹{b.fare}</span>
                       </div>
                     )}
                   </div>
@@ -756,7 +795,12 @@ export function BookingModal({
 
           {step === 2 && (
             <>
-              <Button type="button" variant="outline" onClick={() => setStep(1)} disabled={submitting}>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setStep(1)}
+                disabled={submitting}
+              >
                 <ArrowLeft className="mr-1.5 size-4" /> Edit Details
               </Button>
               <Button type="button" onClick={submitBooking} disabled={submitting}>
@@ -771,19 +815,31 @@ export function BookingModal({
                 type="button"
                 className="w-full sm:flex-1 bg-[#4cd7f6] text-[#0f1417] font-extrabold glow-button hover:bg-[#4cd7f6]/90 rounded-xl"
                 onClick={() => {
-                  handleOpenChange(false);
-                  onViewTickets?.();
+                  if (confirmedBookings.length > 0) {
+                    downloadTicketPDF({ booking: confirmedBookings, train });
+                  }
                 }}
               >
-                <Ticket className="mr-1.5 size-4" /> View Booking / Tickets
+                <FileDown className="mr-1.5 size-4" /> Download Ticket PDF
               </Button>
               <Button
                 type="button"
                 variant="outline"
-                className="w-full sm:w-auto border-[#909097]/30 text-[#dfe3e7] rounded-xl font-semibold"
+                className="w-full sm:w-auto border-[#4cd7f6]/30 text-[#4cd7f6] hover:bg-[#4cd7f6]/10 rounded-xl font-semibold"
+                onClick={() => {
+                  handleOpenChange(false);
+                  onViewTickets?.();
+                }}
+              >
+                <Ticket className="mr-1.5 size-4" /> View Tickets
+              </Button>
+              <Button
+                type="button"
+                variant="ghost"
+                className="w-full sm:w-auto text-[#909097] hover:text-white rounded-xl font-semibold"
                 onClick={() => handleOpenChange(false)}
               >
-                Done & Close
+                Close
               </Button>
             </div>
           )}

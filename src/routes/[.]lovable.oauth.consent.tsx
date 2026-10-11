@@ -28,7 +28,8 @@ const oauthApi = () => (supabase.auth as unknown as { oauth: OAuthApi }).oauth;
 export const Route = createFileRoute("/.lovable/oauth/consent")({
   ssr: false,
   validateSearch: (s: Record<string, unknown>) => ({
-    authorization_id: typeof s['authorization_id'] === "string" ? (s['authorization_id'] as string) : "",
+    authorization_id:
+      typeof s["authorization_id"] === "string" ? (s["authorization_id"] as string) : "",
   }),
   loader: async ({ location }) => {
     const authorizationId = new URLSearchParams(location.search).get("authorization_id");
@@ -84,7 +85,8 @@ function Consent() {
     const { data, error: err } = await fn;
     setBusy(false);
     if (err) return setError(err.message);
-    if (!data.session) return setNotice("Check your inbox to confirm this address, then reopen this link.");
+    if (!data.session)
+      return setNotice("Check your inbox to confirm this address, then reopen this link.");
     window.location.reload();
   }
 
@@ -111,7 +113,7 @@ function Consent() {
       <Shell>
         <h1 className="text-2xl font-semibold tracking-tight">Sign in to continue</h1>
         <p className="mt-2 text-sm text-muted-foreground">
-          Sign in to authorize an app to use RailVerse on your behalf.
+          Sign in to authorize an app to use Travia on your behalf.
         </p>
         <div className="mt-6 space-y-4">
           <div className="space-y-2">
@@ -158,23 +160,16 @@ function Consent() {
 
   return (
     <Shell>
-      <h1 className="text-2xl font-semibold tracking-tight">
-        Connect {clientName} to RailVerse
-      </h1>
+      <h1 className="text-2xl font-semibold tracking-tight">Connect {clientName} to Travia</h1>
       <p className="mt-2 text-sm text-muted-foreground">
-        This lets {clientName} use RailVerse's timetable and reservation tools as you.
+        This lets {clientName} use Travia's timetable and reservation tools as you.
       </p>
       {error && <p className="mt-4 text-sm text-destructive">{error}</p>}
       <div className="mt-6 flex gap-2">
         <Button className="flex-1" disabled={busy} onClick={() => decide(true)}>
           Approve
         </Button>
-        <Button
-          className="flex-1"
-          variant="outline"
-          disabled={busy}
-          onClick={() => decide(false)}
-        >
+        <Button className="flex-1" variant="outline" disabled={busy} onClick={() => decide(false)}>
           Deny
         </Button>
       </div>

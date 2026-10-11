@@ -7,13 +7,10 @@ export default defineTool({
   name: "simulate_bookings",
   title: "Simulate bookings",
   description:
-    "Run RailVerse's seat allocation engine for a train: books N passengers in sequence and reports each resulting status (CONFIRMED with seat and berth, RAC, or WAITLIST position).",
+    "Run Travia's seat allocation engine for a train: books N passengers in sequence and reports each resulting status (CONFIRMED with seat and berth, RAC, or WAITLIST position).",
   inputSchema: {
     trainNumber: z.string().describe("Train number from list_trains, e.g. 12951."),
-    passengers: z
-      .number()
-      .int()
-      .describe("How many passengers to book in sequence (1-50)."),
+    passengers: z.number().int().describe("How many passengers to book in sequence (1-50)."),
     preference: z
       .enum(["Lower", "Middle", "Upper", "No Preference"])
       .optional()

@@ -4,12 +4,15 @@ import { supabase } from "@/integrations/supabase/client";
 import { defaultState, book as bookEngine, cancel as cancelEngine } from "./engine";
 import type { BookInput } from "./engine";
 import type { Booking, RailState, Train } from "./types";
+import { useAuth } from "./auth";
 
 interface Ctx {
   state: RailState;
   hydrated: boolean;
   loading: boolean;
-  book: (input: BookInput) => Promise<{ booking: Booking | null; bookings?: Booking[]; message: string }>;
+  book: (
+    input: BookInput,
+  ) => Promise<{ booking: Booking | null; bookings?: Booking[]; message: string }>;
   cancel: (bookingId: string) => Promise<void>;
   addTrain: (train: Omit<Train, "id">) => Promise<void>;
   updateTrain: (train: Train) => Promise<void>;
@@ -24,7 +27,8 @@ function getLocalState(): RailState {
   const def = defaultState();
   try {
     if (typeof window === "undefined") return def;
-    const raw = localStorage.getItem("railverse_state");
+    const raw =
+      localStorage.getItem("travia_state") || localStorage.getItem("railverse_state");
     if (raw) {
       const parsed = JSON.parse(raw) as RailState;
       const existingNumbers = new Set((parsed.trains || []).map((t) => t.number));
@@ -34,7 +38,6 @@ function getLocalState(): RailState {
         trains: mergedTrains,
         bookings: parsed.bookings || [],
       };
-      // Save updated merged state back to local storage
       saveLocalState(mergedState);
       return mergedState;
     }
@@ -46,6 +49,7 @@ function getLocalState(): RailState {
 function saveLocalState(st: RailState) {
   try {
     if (typeof window === "undefined") return;
+    localStorage.setItem("travia_state", JSON.stringify(st));
     localStorage.setItem("railverse_state", JSON.stringify(st));
   } catch {}
 }
@@ -56,7 +60,9 @@ import { calculateDuration } from "./engine";
 function mapTrain(t: any): Train {
   const matchDataset = KAGGLE_TRAIN_DATASET.find((k) => k.trainNumber === t.number);
   const routeStops = t.route_stops || t.routeStops || matchDataset?.trainRoute;
-  const runningDays = t.running_days || t.runningDays || matchDataset?.runningDays || ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+  const runningDays = t.running_days ||
+    t.runningDays ||
+    matchDataset?.runningDays || ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
   const dep = t.departure || matchDataset?.departureTime || "08:00";
   const arr = t.arrival || matchDataset?.arrivalTime || "20:00";
   const duration = t.duration || calculateDuration(dep, arr, routeStops);
@@ -66,7 +72,11 @@ function mapTrain(t: any): Train {
     number: t.number,
     name: t.name,
     from: t.from_station || t.from || matchDataset?.trainRoute[0]?.stationName || "Origin",
-    to: t.to_station || t.to || matchDataset?.trainRoute[matchDataset.trainRoute.length - 1]?.stationName || "Destination",
+    to:
+      t.to_station ||
+      t.to ||
+      matchDataset?.trainRoute[matchDataset.trainRoute.length - 1]?.stationName ||
+      "Destination",
     departure: dep,
     arrival: arr,
     fare: Number(t.fare),
@@ -83,15 +93,26 @@ function mapBooking(b: any): Booking {
   return {
     id: b.id,
     pnr: b.pnr,
+    userId: b.user_id || b.userId || undefined,
     trainId: b.train_id || b.trainId,
     passengerName: b.passenger_name || b.passengerName,
     age: Number(b.age),
     gender: b.gender,
     preference: b.preference,
     status: b.status,
-    seatNumber: b.seat_number != null ? Number(b.seat_number) : b.seatNumber != null ? Number(b.seatNumber) : null,
+    seatNumber:
+      b.seat_number != null
+        ? Number(b.seat_number)
+        : b.seatNumber != null
+          ? Number(b.seatNumber)
+          : null,
     berth: b.berth,
-    queuePosition: b.queue_position != null ? Number(b.queue_position) : b.queuePosition != null ? Number(b.queuePosition) : null,
+    queuePosition:
+      b.queue_position != null
+        ? Number(b.queue_position)
+        : b.queuePosition != null
+          ? Number(b.queuePosition)
+          : null,
     fare: Number(b.fare),
     journeyDate: b.journey_date || b.journeyDate || new Date().toISOString().split("T")[0],
     fromStation: b.from_station || b.fromStation,
@@ -103,6 +124,7 @@ function mapBooking(b: any): Booking {
 }
 
 export function RailProvider({ children }: { children: ReactNode }) {
+  const { user } = useAuth();
   const [state, setState] = useState<RailState>({ trains: [], bookings: [] });
   const [hydrated, setHydrated] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -110,9 +132,20 @@ export function RailProvider({ children }: { children: ReactNode }) {
   const fetchState = useCallback(async () => {
     try {
       setLoading(true);
+      const bookingsQuery =
+        user?.role === "admin"
+          ? supabase.from("bookings").select("*").order("created_at", { ascending: true })
+          : user?.id
+            ? supabase
+                .from("bookings")
+                .select("*")
+                .eq("user_id", user.id)
+                .order("created_at", { ascending: true })
+            : Promise.resolve({ data: [], error: null });
+
       const [trainsRes, bookingsRes] = await Promise.all([
         supabase.from("trains").select("*").order("created_at", { ascending: true }),
-        supabase.from("bookings").select("*").order("created_at", { ascending: true }),
+        bookingsQuery,
       ]);
 
       if (!trainsRes.error && trainsRes.data) {
@@ -122,7 +155,7 @@ export function RailProvider({ children }: { children: ReactNode }) {
         const missingFromDef = def.trains.filter((t) => !dbNumbers.has(t.number));
         const trains = [...dbTrains, ...missingFromDef];
 
-        const bookings = (bookingsRes.data || []).map(mapBooking);
+        const bookings = ((bookingsRes as any).data || []).map(mapBooking);
         const newState = { trains, bookings };
         setState(newState);
         saveLocalState(newState);
@@ -138,7 +171,7 @@ export function RailProvider({ children }: { children: ReactNode }) {
     // Fallback to local state persistence
     const local = getLocalState();
     setState(local);
-  }, []);
+  }, [user?.id, user?.role]);
 
   useEffect(() => {
     fetchState();
@@ -146,16 +179,12 @@ export function RailProvider({ children }: { children: ReactNode }) {
     let channel: any;
     try {
       channel = supabase
-        .channel("public:railverse")
-        .on(
-          "postgres_changes",
-          { event: "*", schema: "public", table: "trains" },
-          () => fetchState(),
+        .channel("public:travia")
+        .on("postgres_changes", { event: "*", schema: "public", table: "trains" }, () =>
+          fetchState(),
         )
-        .on(
-          "postgres_changes",
-          { event: "*", schema: "public", table: "bookings" },
-          () => fetchState(),
+        .on("postgres_changes", { event: "*", schema: "public", table: "bookings" }, () =>
+          fetchState(),
         )
         .subscribe();
     } catch {}
@@ -168,20 +197,27 @@ export function RailProvider({ children }: { children: ReactNode }) {
   }, [fetchState]);
 
   const book = useCallback(
-    async (input: BookInput): Promise<{ booking: Booking | null; bookings?: Booking[]; message: string }> => {
-      // Execute smart berth allocation via engine
-      const engineResult = bookEngine(state, input);
-      if (!engineResult.booking) return { booking: null, bookings: [], message: engineResult.message };
+    async (
+      input: BookInput,
+    ): Promise<{ booking: Booking | null; bookings?: Booking[]; message: string }> => {
+      const currentUserId = user?.id;
+      // Execute smart berth allocation via engine with current user ID
+      const engineResult = bookEngine(state, {
+        ...input,
+        userId: currentUserId,
+      });
+      if (!engineResult.booking)
+        return { booking: null, bookings: [], message: engineResult.message };
 
       try {
         const { data: sessionData } = await supabase.auth.getSession();
-        const userId = sessionData?.session?.user?.id;
+        const authUid = sessionData?.session?.user?.id || currentUserId;
 
-        if (userId && engineResult.bookings.length > 0) {
+        if (authUid && engineResult.bookings.length > 0) {
           const insertPayloads = engineResult.bookings.map((b) => ({
             id: b.id,
             pnr: b.pnr,
-            user_id: userId,
+            user_id: authUid,
             train_id: b.trainId,
             passenger_name: b.passengerName,
             age: b.age,
@@ -192,22 +228,26 @@ export function RailProvider({ children }: { children: ReactNode }) {
             berth: b.berth,
             queue_position: b.queuePosition,
             fare: b.fare,
-            journey_date: b.journeyDate || new Date().toISOString().split("T")[0],
-            from_station: b.fromStation,
-            to_station: b.toStation,
-            boarding_time: b.boardingTime,
-            arrival_time: b.arrivalTime,
+            journey_date: b.journeyDate || new Date().toISOString().split("T")[0]!,
+            from_station: b.fromStation ?? null,
+            to_station: b.toStation ?? null,
+            boarding_time: b.boardingTime ?? null,
+            arrival_time: b.arrivalTime ?? null,
           }));
 
-          await supabase.from("bookings").insert(insertPayloads).catch(() => {});
+          await (supabase.from("bookings").insert(insertPayloads as any) as any);
         }
       } catch {}
 
       setState(engineResult.state);
       saveLocalState(engineResult.state);
-      return { booking: engineResult.booking, bookings: engineResult.bookings, message: engineResult.message };
+      return {
+        booking: engineResult.booking,
+        bookings: engineResult.bookings,
+        message: engineResult.message,
+      };
     },
-    [state],
+    [state, user?.id],
   );
 
   const cancel = useCallback(
@@ -254,7 +294,10 @@ export function RailProvider({ children }: { children: ReactNode }) {
       } catch {}
 
       // Fallback local add train execution
-      const newTrain: Train = { ...train, id: `T-${Math.random().toString(36).slice(2, 8).toUpperCase()}` };
+      const newTrain: Train = {
+        ...train,
+        id: `T-${Math.random().toString(36).slice(2, 8).toUpperCase()}`,
+      };
       const nextState = { ...state, trains: [...state.trains, newTrain] };
       setState(nextState);
       saveLocalState(nextState);

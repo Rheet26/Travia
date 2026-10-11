@@ -23,6 +23,7 @@ import { BrandMark } from "@/components/railverse/shell";
 import { KAGGLE_TRAIN_DATASET } from "@/lib/railverse/dataset";
 import { AnimatedTrainBackdrop } from "@/components/railverse/animated-train-backdrop";
 import { FloatingDestinationLabels } from "@/components/railverse/floating-destination-labels";
+import { ThemeToggle } from "@/components/railverse/theme-toggle";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -93,30 +94,45 @@ function Landing() {
   const popularTrains = KAGGLE_TRAIN_DATASET.slice(0, 4);
 
   return (
-    <div className="relative min-h-screen text-[#dfe3e7] overflow-x-hidden bg-[#0f1417]">
+    <div className="relative min-h-screen text-foreground dark:text-[#dfe3e7] overflow-x-hidden bg-background dark:bg-[#0f1417] transition-colors duration-200">
       <AnimatedTrainBackdrop />
 
       {/* Floating Waypoint Destination Labels across the Hero area */}
       <FloatingDestinationLabels onSelectDestination={(city) => setSearchTo(city)} />
 
       {/* Desktop Header */}
-      <header className="hidden md:flex fixed top-0 w-full z-50 bg-[#0f1417]/80 backdrop-blur-xl border-b border-[#4cd7f6]/20 px-8 h-20 items-center justify-between shadow-xl">
+      <header className="hidden md:flex fixed top-0 w-full z-50 bg-background/80 dark:bg-[#0f1417]/80 backdrop-blur-xl border-b border-border/40 dark:border-[#4cd7f6]/20 px-8 h-20 items-center justify-between shadow-xl">
         <div className="flex items-center gap-8">
           <BrandMark />
         </div>
         <nav className="flex items-center gap-8">
-          <a href="#explore" className="font-mono text-xs font-bold uppercase tracking-wider text-[#4cd7f6] border-b-2 border-[#4cd7f6] pb-1">
+          <a
+            href="#explore"
+            className="font-mono text-xs font-bold uppercase tracking-wider text-[#4cd7f6] border-b-2 border-[#4cd7f6] pb-1"
+          >
             Explore
           </a>
-          <Link to="/passenger" className="font-mono text-xs font-bold uppercase tracking-wider text-[#909097] hover:text-[#4cd7f6] transition-colors">
+          <Link
+            to="/passenger"
+            className="font-mono text-xs font-bold uppercase tracking-wider text-muted-foreground dark:text-[#909097] hover:text-[#4cd7f6] transition-colors"
+          >
             Tickets
           </Link>
-          <a href="#routes" className="font-mono text-xs font-bold uppercase tracking-wider text-[#909097] hover:text-[#4cd7f6] transition-colors">
+          <a
+            href="#routes"
+            className="font-mono text-xs font-bold uppercase tracking-wider text-muted-foreground dark:text-[#909097] hover:text-[#4cd7f6] transition-colors"
+          >
             Express Routes
           </a>
         </nav>
         <div className="flex items-center gap-3">
-          <Button asChild variant="ghost" size="sm" className="font-bold text-[#dfe3e7] hover:text-[#4cd7f6] hover:bg-[#1b2023]">
+          <ThemeToggle />
+          <Button
+            asChild
+            variant="ghost"
+            size="sm"
+            className="font-bold text-foreground dark:text-[#dfe3e7] hover:text-[#4cd7f6] hover:bg-muted dark:hover:bg-[#1b2023]"
+          >
             <Link to="/auth" search={{ mode: "login" }}>
               Login
             </Link>
@@ -134,13 +150,16 @@ function Landing() {
       </header>
 
       {/* Mobile Header */}
-      <header className="md:hidden fixed top-0 w-full z-50 bg-[#0f1417]/90 backdrop-blur-xl border-b border-[#4cd7f6]/20 flex justify-between items-center px-4 h-16">
+      <header className="md:hidden fixed top-0 w-full z-50 bg-background/90 dark:bg-[#0f1417]/90 backdrop-blur-xl border-b border-border/40 dark:border-[#4cd7f6]/20 flex justify-between items-center px-4 h-16">
         <BrandMark />
-        <Link to="/auth" className="flex items-center">
-          <div className="w-8 h-8 rounded-full border border-[#4cd7f6]/30 bg-[#4cd7f6]/10 text-[#4cd7f6] flex items-center justify-center font-bold text-xs">
-            U
-          </div>
-        </Link>
+        <div className="flex items-center gap-2">
+          <ThemeToggle />
+          <Link to="/auth" search={{ mode: "login" }} className="flex items-center">
+            <div className="w-8 h-8 rounded-full border border-[#4cd7f6]/30 bg-[#4cd7f6]/10 text-[#4cd7f6] flex items-center justify-center font-bold text-xs">
+              U
+            </div>
+          </Link>
+        </div>
       </header>
 
       <main className="pb-24 md:pb-16 pt-16 md:pt-20 relative z-10">
@@ -157,30 +176,33 @@ function Landing() {
           </div>
 
           {/* Hero Typography */}
-          <h1 className="font-display text-4xl sm:text-6xl md:text-7xl font-extrabold text-white tracking-tight leading-[1.08] max-w-4xl drop-shadow-lg">
-            Your Journey.<br />
+          <h1 className="font-display text-4xl sm:text-6xl md:text-7xl font-extrabold text-foreground dark:text-white tracking-tight leading-[1.08] max-w-4xl drop-shadow-lg">
+            Your Journey.
+            <br />
             <span className="text-[#4cd7f6] drop-shadow-[0_0_25px_rgba(76,215,246,0.4)]">
               Reimagined.
             </span>
           </h1>
 
-          <p className="mt-5 text-base sm:text-lg text-[#909097] max-w-2xl mx-auto font-medium leading-relaxed">
-            Experience ultra-fast railway booking powered by <strong>Travia</strong>. Automated berth allocation, age-prioritized seat assignment, live RAC/Waitlist promotion, and station timeline intelligence.
+          <p className="mt-5 text-base sm:text-lg text-muted-foreground dark:text-[#909097] max-w-2xl mx-auto font-medium leading-relaxed">
+            Experience ultra-fast railway booking powered by <strong>Travia</strong>. Automated
+            berth allocation, age-prioritized seat assignment, live RAC/Waitlist promotion, and
+            station timeline intelligence.
           </p>
         </section>
 
         {/* Search Form (Glass Card Overlay) */}
         <section id="explore" className="px-4 md:px-8 -mt-4 relative z-20">
-          <div className="max-w-4xl mx-auto glass-card rounded-2xl p-6 glow-card border border-[#4cd7f6]/25">
+          <div className="max-w-4xl mx-auto glass-card rounded-2xl p-6 glow-card border border-[#0284c7]/30 dark:border-[#4cd7f6]/25">
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 items-end">
               <div className="flex flex-col gap-1.5">
-                <label className="font-mono text-xs font-bold uppercase tracking-wider text-[#4cd7f6]">
+                <label className="font-mono text-xs font-bold uppercase tracking-wider text-[#0284c7] dark:text-[#4cd7f6]">
                   Origin Station
                 </label>
                 <div className="relative">
-                  <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-[#909097]" />
+                  <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground dark:text-[#909097]" />
                   <Input
-                    className="w-full bg-[#020617] border border-[#909097]/30 rounded-xl py-3 pl-10 pr-4 text-white font-medium focus:border-[#4cd7f6] focus:ring-1 focus:ring-[#4cd7f6]/50 placeholder:text-[#909097]/50 text-sm"
+                    className="w-full bg-card dark:bg-[#020617] border border-border dark:border-[#909097]/30 rounded-xl py-3 pl-10 pr-4 text-foreground dark:text-white font-medium focus:border-[#0284c7] dark:focus:border-[#4cd7f6] placeholder:text-muted-foreground text-sm"
                     placeholder="e.g. New Delhi, NDLS"
                     value={searchFrom}
                     onChange={(e) => setSearchFrom(e.target.value)}
@@ -189,13 +211,13 @@ function Landing() {
               </div>
 
               <div className="flex flex-col gap-1.5">
-                <label className="font-mono text-xs font-bold uppercase tracking-wider text-[#4cd7f6]">
+                <label className="font-mono text-xs font-bold uppercase tracking-wider text-[#0284c7] dark:text-[#4cd7f6]">
                   Destination Station
                 </label>
                 <div className="relative">
-                  <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-[#909097]" />
+                  <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground dark:text-[#909097]" />
                   <Input
-                    className="w-full bg-[#020617] border border-[#909097]/30 rounded-xl py-3 pl-10 pr-4 text-white font-medium focus:border-[#4cd7f6] focus:ring-1 focus:ring-[#4cd7f6]/50 placeholder:text-[#909097]/50 text-sm"
+                    className="w-full bg-card dark:bg-[#020617] border border-border dark:border-[#909097]/30 rounded-xl py-3 pl-10 pr-4 text-foreground dark:text-white font-medium focus:border-[#0284c7] dark:focus:border-[#4cd7f6] placeholder:text-muted-foreground text-sm"
                     placeholder="e.g. Mumbai Central, MMCT"
                     value={searchTo}
                     onChange={(e) => setSearchTo(e.target.value)}
@@ -204,13 +226,13 @@ function Landing() {
               </div>
 
               <div className="flex flex-col gap-1.5">
-                <label className="font-mono text-xs font-bold uppercase tracking-wider text-[#4cd7f6]">
+                <label className="font-mono text-xs font-bold uppercase tracking-wider text-[#0284c7] dark:text-[#4cd7f6]">
                   Journey Date
                 </label>
                 <div className="relative">
-                  <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-[#909097]" />
+                  <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground dark:text-[#909097]" />
                   <Input
-                    className="w-full bg-[#020617] border border-[#909097]/30 rounded-xl py-3 pl-10 pr-4 text-white font-medium focus:border-[#4cd7f6] focus:ring-1 focus:ring-[#4cd7f6]/50 placeholder:text-[#909097]/50 text-sm"
+                    className="w-full bg-card dark:bg-[#020617] border border-border dark:border-[#909097]/30 rounded-xl py-3 pl-10 pr-4 text-foreground dark:text-white font-medium focus:border-[#0284c7] dark:focus:border-[#4cd7f6] placeholder:text-muted-foreground text-sm"
                     placeholder="Today"
                     value={searchDate}
                     onChange={(e) => setSearchDate(e.target.value)}
@@ -221,7 +243,7 @@ function Landing() {
               <div className="w-full">
                 <Button
                   asChild
-                  className="w-full bg-[#4cd7f6] text-[#0f1417] font-extrabold py-3 h-11 rounded-xl glow-button hover:bg-[#4cd7f6]/90 transition-all flex items-center justify-center gap-2"
+                  className="w-full bg-[#0284c7] dark:bg-[#4cd7f6] text-white dark:text-[#0f1417] font-extrabold py-3 h-11 rounded-xl glow-button hover:opacity-90 transition-all flex items-center justify-center gap-2"
                 >
                   <Link to="/passenger">
                     <span>Find Express Trains</span>
@@ -236,36 +258,45 @@ function Landing() {
         {/* Stats Section */}
         <section className="px-4 md:px-8 py-12 mt-8 max-w-5xl mx-auto">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div className="flex flex-col justify-center border-l-2 border-[#4cd7f6] pl-4 py-2 glass-card rounded-r-xl p-4">
-              <span className="font-display text-4xl font-extrabold text-white">30+</span>
-              <span className="font-mono text-xs font-bold text-[#909097] uppercase mt-1">Active Express Routes</span>
-            </div>
-            <div className="flex flex-col justify-center border-l-2 border-[#4cd7f6] pl-4 py-2 glass-card rounded-r-xl p-4">
-              <span className="font-display text-4xl font-extrabold text-white">
-                12,000+
+            <div className="flex flex-col justify-center border-l-2 border-[#0284c7] dark:border-[#4cd7f6] pl-4 py-2 glass-card rounded-r-xl p-4">
+              <span className="font-display text-4xl font-extrabold text-foreground dark:text-white">30+</span>
+              <span className="font-mono text-xs font-bold text-slate-700 dark:text-[#909097] uppercase mt-1">
+                Active Express Routes
               </span>
-              <span className="font-mono text-xs font-bold text-[#909097] uppercase mt-1">Confirmed Berths Mapped</span>
             </div>
-            <div className="flex flex-col justify-center border-l-2 border-[#4cd7f6] pl-4 py-2 glass-card rounded-r-xl p-4">
-              <span className="font-display text-4xl font-extrabold text-white">99.9%</span>
-              <span className="font-mono text-xs font-bold text-[#909097] uppercase mt-1">Real-Time Queue Sync</span>
+            <div className="flex flex-col justify-center border-l-2 border-[#0284c7] dark:border-[#4cd7f6] pl-4 py-2 glass-card rounded-r-xl p-4">
+              <span className="font-display text-4xl font-extrabold text-foreground dark:text-white">12,000+</span>
+              <span className="font-mono text-xs font-bold text-slate-700 dark:text-[#909097] uppercase mt-1">
+                Confirmed Berths Mapped
+              </span>
+            </div>
+            <div className="flex flex-col justify-center border-l-2 border-[#0284c7] dark:border-[#4cd7f6] pl-4 py-2 glass-card rounded-r-xl p-4">
+              <span className="font-display text-4xl font-extrabold text-foreground dark:text-white">99.9%</span>
+              <span className="font-mono text-xs font-bold text-slate-700 dark:text-[#909097] uppercase mt-1">
+                Real-Time Queue Sync
+              </span>
             </div>
           </div>
         </section>
 
         {/* Featured Express Trains Section */}
         <section id="routes" className="px-4 md:px-8 py-8 max-w-6xl mx-auto">
-          <div className="glass-card rounded-2xl p-6 sm:p-8 border border-[#4cd7f6]/20">
-            <div className="flex flex-wrap items-end justify-between gap-4 border-b border-[#909097]/20 pb-4 mb-6">
+          <div className="glass-card rounded-2xl p-6 sm:p-8 border border-border dark:border-[#4cd7f6]/20">
+            <div className="flex flex-wrap items-end justify-between gap-4 border-b border-border/40 dark:border-[#909097]/20 pb-4 mb-6">
               <div>
-                <span className="font-mono text-xs font-bold tracking-widest text-[#4cd7f6] uppercase">
+                <span className="font-mono text-xs font-bold tracking-widest text-[#0284c7] dark:text-[#4cd7f6] uppercase">
                   PREMIER NETWORK
                 </span>
-                <h2 className="text-2xl sm:text-3xl font-extrabold text-white mt-1">
+                <h2 className="text-2xl sm:text-3xl font-extrabold text-foreground dark:text-white mt-1">
                   Popular Express Journeys
                 </h2>
               </div>
-              <Button asChild variant="outline" size="sm" className="rounded-xl border-[#4cd7f6]/30 text-[#4cd7f6] font-bold bg-[#171c1f] hover:bg-[#4cd7f6]/10">
+              <Button
+                asChild
+                variant="outline"
+                size="sm"
+                className="rounded-xl border-[#0284c7]/40 dark:border-[#4cd7f6]/30 text-[#0284c7] dark:text-[#4cd7f6] bg-card dark:bg-[#171c1f] hover:bg-[#0284c7]/10 dark:hover:bg-[#4cd7f6]/10"
+              >
                 <Link to="/passenger">
                   View All Routes <ArrowRight className="ml-1.5 size-4" />
                 </Link>
@@ -277,21 +308,29 @@ function Landing() {
                 <motion.div
                   key={train.trainNumber}
                   whileHover={{ y: -4 }}
-                  className="glass-card rounded-xl p-4 border border-[#909097]/20 flex flex-col justify-between"
+                  className="glass-card rounded-xl p-4 border border-border/60 dark:border-[#909097]/20 flex flex-col justify-between"
                 >
                   <div>
-                    <div className="flex items-center justify-between text-xs font-mono font-bold text-[#4cd7f6]">
+                    <div className="flex items-center justify-between text-xs font-mono font-bold text-[#0284c7] dark:text-[#4cd7f6]">
                       <span>{train.trainNumber}</span>
-                      <Badge className="bg-[#4cd7f6]/15 text-[#4cd7f6] border border-[#4cd7f6]/30 text-[10px]">
+                      <Badge className="bg-[#0284c7]/15 dark:bg-[#4cd7f6]/15 text-[#0284c7] dark:text-[#38bdf8] border border-[#0284c7]/30 dark:border-[#4cd7f6]/30 text-[10px]">
                         ₹{train.fare}
                       </Badge>
                     </div>
-                    <h3 className="mt-2 text-base font-bold text-white line-clamp-1">{train.trainName}</h3>
-                    <p className="mt-1 text-xs text-[#909097]">{train.route}</p>
+                    <h3 className="mt-2 text-base font-bold text-foreground dark:text-white line-clamp-1">
+                      {train.trainName}
+                    </h3>
+                    <p className="mt-1 text-xs text-slate-600 dark:text-[#909097]">{train.route}</p>
                   </div>
-                  <div className="mt-4 pt-3 border-t border-[#909097]/20 flex items-center justify-between">
-                    <span className="text-[11px] font-mono text-[#909097]">{train.trainRoute.length} Stops</span>
-                    <Button asChild size="sm" className="bg-[#4cd7f6] text-[#0f1417] font-extrabold text-xs rounded-lg hover:bg-[#4cd7f6]/90">
+                  <div className="mt-4 pt-3 border-t border-border/40 dark:border-[#909097]/20 flex items-center justify-between">
+                    <span className="text-[11px] font-mono text-slate-600 dark:text-[#909097]">
+                      {train.trainRoute.length} Stops
+                    </span>
+                    <Button
+                      asChild
+                      size="sm"
+                      className="bg-[#0284c7] dark:bg-[#4cd7f6] text-white dark:text-[#0f1417] font-extrabold text-xs rounded-lg hover:opacity-90"
+                    >
                       <Link to="/passenger">Book Ticket</Link>
                     </Button>
                   </div>
@@ -304,13 +343,13 @@ function Landing() {
         {/* Platform Features Grid */}
         <section className="px-4 md:px-8 py-12 max-w-6xl mx-auto">
           <div className="text-center max-w-2xl mx-auto mb-10">
-            <span className="font-mono text-xs font-bold tracking-widest text-[#4cd7f6] uppercase">
+            <span className="font-mono text-xs font-bold tracking-widest text-[#0284c7] dark:text-[#4cd7f6] uppercase">
               SMART RESERVATION ENGINE
             </span>
-            <h2 className="text-2xl sm:text-3xl font-extrabold text-white mt-1">
+            <h2 className="text-2xl sm:text-3xl font-extrabold text-foreground dark:text-white mt-1">
               Engineered for Modern Rail Travel
             </h2>
-            <p className="text-xs text-[#909097] mt-1 font-medium">
+            <p className="text-xs text-slate-600 dark:text-[#909097] mt-1 font-medium">
               Real-time seat allocation algorithms with instant queue promotion intelligence.
             </p>
           </div>
@@ -323,13 +362,13 @@ function Landing() {
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ duration: 0.4, delay: i * 0.08 }}
-                className="glass-card rounded-2xl p-6 border border-[#909097]/20 hover:border-[#4cd7f6]/40 transition-colors"
+                className="glass-card rounded-2xl p-6 border border-border/60 dark:border-[#909097]/20 hover:border-[#0284c7]/50 dark:hover:border-[#4cd7f6]/40 transition-colors"
               >
-                <div className="w-10 h-10 rounded-xl bg-[#4cd7f6]/15 text-[#4cd7f6] flex items-center justify-center mb-4">
+                <div className="w-10 h-10 rounded-xl bg-[#0284c7]/15 dark:bg-[#4cd7f6]/15 text-[#0284c7] dark:text-[#4cd7f6] flex items-center justify-center mb-4">
                   <f.icon className="size-5" />
                 </div>
-                <h3 className="text-base font-bold text-white">{f.title}</h3>
-                <p className="mt-2 text-xs leading-relaxed text-[#909097] font-medium">{f.body}</p>
+                <h3 className="text-base font-bold text-foreground dark:text-white">{f.title}</h3>
+                <p className="mt-2 text-xs leading-relaxed text-slate-600 dark:text-[#909097] font-medium">{f.body}</p>
               </motion.div>
             ))}
           </div>
@@ -337,24 +376,27 @@ function Landing() {
 
         {/* How It Works Workflow Section */}
         <section className="px-4 md:px-8 py-10 max-w-6xl mx-auto">
-          <div className="glass-card rounded-2xl p-8 border border-[#4cd7f6]/20">
+          <div className="glass-card rounded-2xl p-8 border border-border/60 dark:border-[#4cd7f6]/20">
             <div className="text-center max-w-xl mx-auto mb-8">
-              <h2 className="text-2xl font-extrabold text-white sm:text-3xl">
+              <h2 className="text-2xl font-extrabold text-foreground dark:text-white sm:text-3xl">
                 Three Simple Steps to Board
               </h2>
-              <p className="text-xs text-[#909097] mt-1 font-medium">
+              <p className="text-xs text-slate-600 dark:text-[#909097] mt-1 font-medium">
                 Seamless booking workflow designed for speed, clarity, and precision.
               </p>
             </div>
 
             <div className="grid gap-6 md:grid-cols-3">
               {steps.map((s) => (
-                <div key={s.n} className="rounded-xl border border-[#909097]/20 bg-[#171c1f]/80 p-5 space-y-2">
-                  <span className="font-mono text-xs font-extrabold tracking-widest text-[#4cd7f6]">
+                <div
+                  key={s.n}
+                  className="rounded-xl border border-border/60 dark:border-[#909097]/20 bg-card dark:bg-[#171c1f]/80 p-5 space-y-2"
+                >
+                  <span className="font-mono text-xs font-extrabold tracking-widest text-[#0284c7] dark:text-[#4cd7f6]">
                     {s.n}
                   </span>
-                  <h3 className="text-base font-extrabold text-white">{s.title}</h3>
-                  <p className="text-xs text-[#909097] font-medium leading-relaxed">{s.body}</p>
+                  <h3 className="text-base font-extrabold text-foreground dark:text-white">{s.title}</h3>
+                  <p className="text-xs text-slate-600 dark:text-[#909097] font-medium leading-relaxed">{s.body}</p>
                 </div>
               ))}
             </div>
@@ -363,23 +405,24 @@ function Landing() {
 
         {/* CTA Footer Hero Banner */}
         <section className="px-4 md:px-8 py-8 max-w-6xl mx-auto">
-          <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-[#0f172a] via-[#0b1d28] to-[#053b48] border border-[#4cd7f6]/30 p-8 sm:p-12 text-center text-white glow-card">
+          <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-[#0284c7] via-[#0369a1] to-[#0f172a] dark:from-[#0f172a] dark:via-[#0b1d28] dark:to-[#053b48] border border-[#0284c7]/40 dark:border-[#4cd7f6]/30 p-8 sm:p-12 text-center text-white glow-card">
             <div className="relative z-10 max-w-2xl mx-auto space-y-4">
-              <Badge className="bg-[#4cd7f6]/20 text-[#4cd7f6] border-[#4cd7f6]/40 px-3 py-1 font-mono text-xs uppercase tracking-widest">
+              <Badge className="bg-white/20 dark:bg-[#4cd7f6]/20 text-white dark:text-[#4cd7f6] border-white/40 dark:border-[#4cd7f6]/40 px-3 py-1 font-mono text-xs uppercase tracking-widest">
                 READY TO TRAVEL
               </Badge>
               <h2 className="text-2xl sm:text-4xl font-extrabold text-white tracking-tight">
                 Ready for your next journey?
               </h2>
-              <p className="text-xs sm:text-sm text-[#909097] leading-relaxed font-medium">
-                Book your confirmed berth with smart preferences or access the admin console to manage network capacities.
+              <p className="text-xs sm:text-sm text-sky-100 dark:text-[#909097] leading-relaxed font-medium">
+                Book your confirmed berth with smart preferences or access the admin console to
+                manage network capacities.
               </p>
 
               <div className="pt-4 flex flex-wrap justify-center gap-3.5">
                 <Button
                   asChild
                   size="lg"
-                  className="bg-[#4cd7f6] text-[#0f1417] font-extrabold hover:bg-[#4cd7f6]/90 rounded-xl px-7 text-sm glow-button"
+                  className="bg-white text-[#0284c7] dark:bg-[#4cd7f6] dark:text-[#0f1417] font-extrabold hover:bg-slate-100 dark:hover:bg-[#4cd7f6]/90 rounded-xl px-7 text-sm glow-button"
                 >
                   <Link to="/passenger">
                     Book Ticket Now <ArrowRight className="ml-1.5 size-4" />
@@ -390,10 +433,10 @@ function Landing() {
                   asChild
                   size="lg"
                   variant="outline"
-                  className="border-[#909097]/40 bg-[#171c1f]/80 text-white hover:bg-[#171c1f] font-bold rounded-xl px-6 text-sm"
+                  className="border-white/40 dark:border-[#909097]/40 bg-white/10 dark:bg-[#171c1f]/80 text-white hover:bg-white/20 dark:hover:bg-[#171c1f] font-bold rounded-xl px-6 text-sm"
                 >
                   <Link to="/admin">
-                    <LayoutDashboard className="mr-1.5 size-4 text-[#4cd7f6]" /> Admin Console
+                    <LayoutDashboard className="mr-1.5 size-4 text-white dark:text-[#4cd7f6]" /> Admin Console
                   </Link>
                 </Button>
               </div>
@@ -403,11 +446,9 @@ function Landing() {
       </main>
 
       {/* Minimal Footer */}
-      <footer className="border-t border-[#909097]/15 bg-[#0f1417] py-6 text-center text-xs font-mono text-[#909097]">
+      <footer className="border-t border-border/40 dark:border-[#909097]/15 bg-background dark:bg-[#0f1417] py-6 text-center text-xs font-mono text-slate-600 dark:text-[#909097]">
         <p>© 2026 TRAVIA · Your Journey. Reimagined.</p>
       </footer>
     </div>
   );
 }
-
-

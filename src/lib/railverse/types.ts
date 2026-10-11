@@ -38,6 +38,7 @@ export interface PassengerInput {
 export interface Booking {
   id: string;
   pnr: string;
+  userId?: string | undefined;
   trainId: string;
   passengerName: string;
   age: number;
@@ -48,11 +49,11 @@ export interface Booking {
   berth: Berth | null;
   queuePosition: number | null;
   fare: number;
-  journeyDate?: string;
-  fromStation?: string;
-  toStation?: string;
-  boardingTime?: string;
-  arrivalTime?: string;
+  journeyDate?: string | undefined;
+  fromStation?: string | undefined;
+  toStation?: string | undefined;
+  boardingTime?: string | undefined;
+  arrivalTime?: string | undefined;
   createdAt: string;
 }
 

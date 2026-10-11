@@ -3,25 +3,26 @@ import { motion } from "motion/react";
 import { ArrowRight, LayoutDashboard, UserRound } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { BrandMark } from "@/components/railverse/shell";
+import { ThemeToggle } from "@/components/railverse/theme-toggle";
 
 type AuthSearch = { mode: "login" | "signup" };
 
 export const Route = createFileRoute("/auth")({
   validateSearch: (search: Record<string, unknown>): AuthSearch => ({
-    mode: search['mode'] === "signup" ? "signup" : "login",
+    mode: search["mode"] === "signup" ? "signup" : "login",
   }),
   head: () => ({
     meta: [
-      { title: "Choose Your Role — RailVerse" },
+      { title: "Choose Your Role — Travia" },
       {
         name: "description",
         content:
-          "Continue as a passenger to book berths and track RAC or waitlist status, or as an admin to manage the RailVerse network.",
+          "Continue as a passenger to book berths and track RAC or waitlist status, or as an admin to manage the Travia network.",
       },
-      { property: "og:title", content: "Choose Your Role — RailVerse" },
+      { property: "og:title", content: "Choose Your Role — Travia" },
       {
         property: "og:description",
-        content: "Select a passenger or admin role to continue into RailVerse.",
+        content: "Select a passenger or admin role to continue into Travia.",
       },
     ],
   }),
@@ -53,7 +54,8 @@ function RoleSelection() {
       <header className="sticky top-0 z-30 border-b border-border/60 bg-background/80 backdrop-blur-xl">
         <div className="mx-auto flex max-w-6xl items-center gap-4 px-4 py-4 sm:px-6">
           <BrandMark />
-          <div className="ml-auto">
+          <div className="ml-auto flex items-center gap-3">
+            <ThemeToggle />
             <Button asChild variant="ghost">
               <Link to="/">Back home</Link>
             </Button>

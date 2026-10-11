@@ -5,9 +5,7 @@
   "auth": {
     "type": "oauth",
     "issuer": "https://clikwdoylzhjlgaffmkm.supabase.co/auth/v1",
-    "accepted_audiences": [
-      "authenticated"
-    ]
+    "accepted_audiences": ["authenticated"]
   },
   "mcp": {
     "server": {
@@ -58,18 +56,10 @@
             "preference": {
               "description": "Berth preference applied to every simulated passenger.",
               "type": "string",
-              "enum": [
-                "Lower",
-                "Middle",
-                "Upper",
-                "No Preference"
-              ]
+              "enum": ["Lower", "Middle", "Upper", "No Preference"]
             }
           },
-          "required": [
-            "trainNumber",
-            "passengers"
-          ]
+          "required": ["trainNumber", "passengers"]
         },
         "outputSchema": null
       },

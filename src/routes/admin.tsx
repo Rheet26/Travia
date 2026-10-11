@@ -1,7 +1,8 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 import { motion } from "motion/react";
-import { Navigation, Pencil, Plus, RotateCcw, Trash2, X } from "lucide-react";
+import { Navigation, Pencil, Plus, RotateCcw, Trash2, X, FileDown } from "lucide-react";
+import { downloadTicketPDF } from "@/lib/railverse/pdf-generator";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -119,10 +120,16 @@ function AdminConsole() {
 
       <Tabs defaultValue="trains" className="mt-8">
         <TabsList className="bg-[#171c1f] border border-[#909097]/20 p-1 rounded-xl">
-          <TabsTrigger value="trains" className="data-[state=active]:bg-[#4cd7f6] data-[state=active]:text-[#0f1417] font-bold text-xs rounded-lg">
+          <TabsTrigger
+            value="trains"
+            className="data-[state=active]:bg-[#4cd7f6] data-[state=active]:text-[#0f1417] font-bold text-xs rounded-lg"
+          >
             Manage Trains
           </TabsTrigger>
-          <TabsTrigger value="bookings" className="data-[state=active]:bg-[#4cd7f6] data-[state=active]:text-[#0f1417] font-bold text-xs rounded-lg">
+          <TabsTrigger
+            value="bookings"
+            className="data-[state=active]:bg-[#4cd7f6] data-[state=active]:text-[#0f1417] font-bold text-xs rounded-lg"
+          >
             Monitor Bookings ({state.bookings.length})
           </TabsTrigger>
         </TabsList>
@@ -147,7 +154,12 @@ function AdminConsole() {
                 <h3 className="text-lg font-bold text-white">
                   {draft.id ? "Edit Train Configuration" : "Add New Train to Fleet"}
                 </h3>
-                <Button variant="ghost" size="icon" onClick={() => setDraft(null)} className="text-[#909097] hover:text-white">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => setDraft(null)}
+                  className="text-[#909097] hover:text-white"
+                >
                   <X className="size-4" />
                 </Button>
               </div>
@@ -164,7 +176,10 @@ function AdminConsole() {
                   ] as const
                 ).map(([label, key]) => (
                   <div key={key} className="grid gap-1.5">
-                    <Label htmlFor={key} className="font-mono text-xs font-bold uppercase text-[#4cd7f6]">
+                    <Label
+                      htmlFor={key}
+                      className="font-mono text-xs font-bold uppercase text-[#4cd7f6]"
+                    >
                       {label}
                     </Label>
                     <Input
@@ -184,7 +199,10 @@ function AdminConsole() {
                   ] as const
                 ).map(([label, key]) => (
                   <div key={key} className="grid gap-1.5">
-                    <Label htmlFor={key} className="font-mono text-xs font-bold uppercase text-[#4cd7f6]">
+                    <Label
+                      htmlFor={key}
+                      className="font-mono text-xs font-bold uppercase text-[#4cd7f6]"
+                    >
                       {label}
                     </Label>
                     <Input
@@ -199,10 +217,17 @@ function AdminConsole() {
               </div>
 
               <div className="mt-6 flex gap-3 pt-3 border-t border-[#909097]/20">
-                <Button onClick={save} className="bg-[#4cd7f6] text-[#0f1417] font-extrabold rounded-xl px-6 glow-button">
+                <Button
+                  onClick={save}
+                  className="bg-[#4cd7f6] text-[#0f1417] font-extrabold rounded-xl px-6 glow-button"
+                >
                   Save Train
                 </Button>
-                <Button variant="outline" onClick={() => setDraft(null)} className="rounded-xl border-[#909097]/30 text-[#909097]">
+                <Button
+                  variant="outline"
+                  onClick={() => setDraft(null)}
+                  className="rounded-xl border-[#909097]/30 text-[#909097]"
+                >
                   Cancel
                 </Button>
               </div>
@@ -223,26 +248,32 @@ function AdminConsole() {
                 <span className="bg-[#4cd7f6] absolute inset-y-0 left-0 w-1" />
                 <div className="flex flex-wrap items-start justify-between gap-4">
                   <div>
-                    <p className="font-mono text-xs font-bold tracking-widest text-[#4cd7f6] uppercase">
+                    <p className="font-mono text-xs font-bold tracking-widest text-[#0284c7] dark:text-[#4cd7f6] uppercase">
                       {train.number}
                     </p>
-                    <h3 className="mt-1 text-xl font-extrabold text-white">{train.name}</h3>
-                    <p className="mt-1 text-xs font-mono text-[#909097]">
-                      {train.from} ({train.departure}) → {train.to} ({train.arrival}) · ₹
-                      {train.fare.toLocaleString("en-IN")}
+                    <h3 className="mt-1 text-xl font-extrabold text-foreground dark:text-white">{train.name}</h3>
+                    <p className="mt-1 text-xs font-mono text-slate-700 dark:text-[#909097]">
+                      {train.from} ({train.departure}) → {train.to} ({train.arrival}) ·{" "}
+                      <span className="text-[#0284c7] dark:text-[#38bdf8] font-bold">
+                        ₹{train.fare.toLocaleString("en-IN")}
+                      </span>
                     </p>
                     <div className="mt-3 flex flex-wrap items-center gap-2">
-                      <Badge className="bg-[#4cd7f6]/15 text-[#4cd7f6] border border-[#4cd7f6]/30 font-mono text-[10px]">
+                      <Badge className="bg-[#0284c7]/15 dark:bg-[#4cd7f6]/15 text-[#0284c7] dark:text-[#4cd7f6] border border-[#0284c7]/30 dark:border-[#4cd7f6]/30 font-mono text-[10px]">
                         Seats {c.confirmed}/{train.seats}
                       </Badge>
-                      <Badge className="bg-amber-500/15 text-amber-300 border border-amber-500/30 font-mono text-[10px]">
+                      <Badge className="bg-amber-500/20 text-amber-800 dark:text-amber-300 border border-amber-500/40 font-mono text-[10px]">
                         RAC {c.rac}/{train.racTotal}
                       </Badge>
-                      <Badge className="bg-rose-500/15 text-rose-300 border border-rose-500/30 font-mono text-[10px]">
+                      <Badge className="bg-rose-500/20 text-rose-800 dark:text-rose-300 border border-rose-500/40 font-mono text-[10px]">
                         WL {c.wl}/{train.wlTotal}
                       </Badge>
                       {(train.runningDays || ["Daily"]).map((d) => (
-                        <Badge key={d} variant="outline" className="text-[10px] py-0 font-mono border-[#909097]/30 text-[#909097]">
+                        <Badge
+                          key={d}
+                          variant="outline"
+                          className="text-[10px] py-0 font-mono border-border dark:border-[#909097]/30 text-slate-700 dark:text-[#909097]"
+                        >
                           {d}
                         </Badge>
                       ))}
@@ -257,16 +288,16 @@ function AdminConsole() {
                         setDetailsTrain(train);
                         setDetailsOpen(true);
                       }}
-                      className="rounded-xl border-[#909097]/30 bg-[#171c1f] text-white font-bold"
+                      className="rounded-xl border-border dark:border-[#909097]/30 bg-card dark:bg-[#171c1f] text-foreground dark:text-white font-bold"
                     >
-                      <Navigation className="mr-1.5 size-3.5 text-[#4cd7f6]" /> Route
+                      <Navigation className="mr-1.5 size-3.5 text-[#0284c7] dark:text-[#4cd7f6]" /> Route
                     </Button>
 
                     <Button
                       variant="outline"
                       size="sm"
                       onClick={() => setDraft({ ...train })}
-                      className="rounded-xl border-[#4cd7f6]/30 bg-[#171c1f] text-[#4cd7f6] font-bold"
+                      className="rounded-xl border-[#0284c7]/40 dark:border-[#4cd7f6]/30 bg-card dark:bg-[#171c1f] text-[#0284c7] dark:text-[#4cd7f6] font-bold"
                     >
                       <Pencil className="mr-1.5 size-3.5" /> Edit
                     </Button>
@@ -298,7 +329,8 @@ function AdminConsole() {
             <div>
               <h3 className="text-base font-bold text-white">Passenger Reservations Chart</h3>
               <p className="text-xs text-[#909097]">
-                View individual passenger bookings, assigned seats, berth allocations, and live queue status.
+                View individual passenger bookings, assigned seats, berth allocations, and live
+                queue status.
               </p>
             </div>
             <div className="font-mono text-xs font-bold text-[#4cd7f6] bg-[#4cd7f6]/10 px-3 py-1.5 rounded-lg border border-[#4cd7f6]/30">
@@ -332,39 +364,46 @@ function AdminConsole() {
                     {state.bookings.map((b) => {
                       const train = state.trains.find((t) => t.id === b.trainId);
                       return (
-                        <tr key={b.id} className="hover:bg-[#171c1f]/50 transition-colors">
+                        <tr key={b.id} className="hover:bg-muted/50 dark:hover:bg-[#171c1f]/50 transition-colors">
                           {/* Passenger */}
                           <td className="py-3.5 px-4">
-                            <span className="font-bold text-white block">{b.passengerName}</span>
-                            <span className="font-mono text-[11px] text-[#909097]">
+                            <span className="font-bold text-foreground dark:text-white block">{b.passengerName}</span>
+                            <span className="font-mono text-[11px] text-slate-600 dark:text-[#909097]">
                               {b.age} yrs · {b.gender}
                             </span>
                           </td>
 
                           {/* PNR */}
-                          <td className="py-3.5 px-4 font-mono font-bold text-[#4cd7f6]">
+                          <td className="py-3.5 px-4 font-mono font-bold text-[#0284c7] dark:text-[#4cd7f6]">
                             {b.pnr}
                           </td>
 
                           {/* Train */}
                           <td className="py-3.5 px-4">
-                            <span className="font-bold text-white block">{train?.name ?? "Express"}</span>
-                            <span className="font-mono text-[11px] text-[#909097]">{train?.number}</span>
+                            <span className="font-bold text-foreground dark:text-white block">
+                              {train?.name ?? "Express"}
+                            </span>
+                            <span className="font-mono text-[11px] text-slate-600 dark:text-[#909097]">
+                              {train?.number}
+                            </span>
                           </td>
 
                           {/* Route */}
-                          <td className="py-3.5 px-4 font-mono text-[11px] text-[#dfe3e7]">
+                          <td className="py-3.5 px-4 font-mono text-[11px] text-foreground dark:text-[#dfe3e7]">
                             {b.fromStation || train?.from} → {b.toStation || train?.to}
                           </td>
 
                           {/* Date */}
-                          <td className="py-3.5 px-4 font-mono text-[11px] text-[#909097]">
+                          <td className="py-3.5 px-4 font-mono text-[11px] text-slate-600 dark:text-[#909097]">
                             {b.journeyDate || "Today"}
                           </td>
 
                           {/* Class */}
                           <td className="py-3.5 px-4">
-                            <Badge variant="outline" className="text-[10px] font-mono border-[#909097]/30 text-[#dfe3e7]">
+                            <Badge
+                              variant="outline"
+                              className="text-[10px] font-mono border-border dark:border-[#909097]/30 text-foreground dark:text-[#dfe3e7]"
+                            >
                               Executive AC
                             </Badge>
                           </td>
@@ -372,13 +411,13 @@ function AdminConsole() {
                           {/* Seat / Berth */}
                           <td className="py-3.5 px-4 font-mono">
                             {b.status === "CONFIRMED" ? (
-                              <span className="text-[#4cd7f6] font-bold">
+                              <span className="text-[#0284c7] dark:text-[#4cd7f6] font-bold">
                                 Seat {b.seatNumber} ({b.berth})
                               </span>
                             ) : b.status === "CANCELLED" ? (
-                              <span className="text-[#909097]">Cancelled</span>
+                              <span className="text-slate-500 dark:text-[#909097]">Cancelled</span>
                             ) : (
-                              <span className="text-amber-300 font-bold">
+                              <span className="text-amber-700 dark:text-amber-300 font-bold">
                                 Queue #{b.queuePosition} ({b.preference})
                               </span>
                             )}
@@ -389,12 +428,12 @@ function AdminConsole() {
                             <Badge
                               className={`font-mono text-[10px] font-bold ${
                                 b.status === "CONFIRMED"
-                                  ? "bg-[#4cd7f6]/20 text-[#4cd7f6] border border-[#4cd7f6]/40"
+                                  ? "bg-[#0284c7]/15 dark:bg-[#4cd7f6]/20 text-[#0284c7] dark:text-[#4cd7f6] border border-[#0284c7]/30 dark:border-[#4cd7f6]/40"
                                   : b.status === "RAC"
-                                    ? "bg-amber-500/20 text-amber-300 border border-amber-500/40"
+                                    ? "bg-amber-500/20 text-amber-800 dark:text-amber-300 border border-amber-500/40"
                                     : b.status === "WAITLIST"
-                                      ? "bg-rose-500/20 text-rose-300 border border-rose-500/40"
-                                      : "bg-[#909097]/20 text-[#909097]"
+                                      ? "bg-rose-500/20 text-rose-800 dark:text-rose-300 border border-rose-500/40"
+                                      : "bg-muted text-muted-foreground"
                               }`}
                             >
                               {b.status}
@@ -402,25 +441,38 @@ function AdminConsole() {
                           </td>
 
                           {/* Fare */}
-                          <td className="py-3.5 px-4 font-display font-extrabold text-white">
+                          <td className="py-3.5 px-4 font-display font-extrabold text-[#0284c7] dark:text-[#38bdf8]">
                             ₹{b.fare.toLocaleString("en-IN")}
                           </td>
 
                           {/* Actions */}
                           <td className="py-3.5 px-4 text-right">
-                            {b.status !== "CANCELLED" && (
+                            <div className="flex items-center justify-end gap-1.5">
                               <Button
                                 variant="ghost"
                                 size="sm"
-                                className="text-rose-400 hover:text-rose-300 hover:bg-rose-500/10 font-bold h-8 px-2.5 rounded-lg text-xs"
-                                onClick={async () => {
-                                  await cancel(b.id);
-                                  toast.success("Booking cancelled & queue promoted");
+                                className="text-[#4cd7f6] hover:text-[#4cd7f6] hover:bg-[#4cd7f6]/10 font-bold h-8 px-2 rounded-lg text-xs"
+                                onClick={() => {
+                                  const tr = state.trains.find((t) => t.id === b.trainId);
+                                  downloadTicketPDF({ booking: b, train: tr });
                                 }}
                               >
-                                Cancel
+                                <FileDown className="mr-1 size-3.5" /> PDF
                               </Button>
-                            )}
+                              {b.status !== "CANCELLED" && (
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  className="text-rose-400 hover:text-rose-300 hover:bg-rose-500/10 font-bold h-8 px-2.5 rounded-lg text-xs"
+                                  onClick={async () => {
+                                    await cancel(b.id);
+                                    toast.success("Booking cancelled & queue promoted");
+                                  }}
+                                >
+                                  Cancel
+                                </Button>
+                              )}
+                            </div>
                           </td>
                         </tr>
                       );
@@ -433,12 +485,7 @@ function AdminConsole() {
         </TabsContent>
       </Tabs>
 
-      <TrainDetailsModal
-        train={detailsTrain}
-        open={detailsOpen}
-        onOpenChange={setDetailsOpen}
-      />
+      <TrainDetailsModal train={detailsTrain} open={detailsOpen} onOpenChange={setDetailsOpen} />
     </ConsoleShell>
   );
 }
-

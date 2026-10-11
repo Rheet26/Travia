@@ -1,7 +1,17 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
-import { Search, Ticket, Trash2, Navigation, SlidersHorizontal, CheckCircle2, Clock } from "lucide-react";
+import {
+  Search,
+  Ticket,
+  Trash2,
+  Navigation,
+  SlidersHorizontal,
+  CheckCircle2,
+  Clock,
+  FileDown,
+} from "lucide-react";
+import { downloadTicketPDF } from "@/lib/railverse/pdf-generator";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -12,7 +22,7 @@ import { formatJourneyDate, BookingModal } from "@/components/railverse/booking-
 import { TrainDetailsModal } from "@/components/railverse/train-details-modal";
 import type { BookingFormValues } from "@/components/railverse/booking-modal";
 import { useRail } from "@/lib/railverse/store";
-import { useRequireRole } from "@/lib/railverse/auth";
+import { useAuth, useRequireRole } from "@/lib/railverse/auth";
 import { countsFor } from "@/lib/railverse/engine";
 import type { Train, Booking } from "@/lib/railverse/types";
 
@@ -48,7 +58,9 @@ function UpgradeStatusTracker({ status }: { status: Booking["status"] }) {
     <div className="glass-card rounded-2xl p-5 border border-[#4cd7f6]/20 my-4">
       <div className="flex items-center gap-2 mb-4">
         <span className="material-symbols-outlined text-[#4cd7f6] text-lg">trending_up</span>
-        <h4 className="font-mono text-xs font-bold uppercase tracking-wider text-white">Upgrade Status</h4>
+        <h4 className="font-mono text-xs font-bold uppercase tracking-wider text-white">
+          Upgrade Status
+        </h4>
       </div>
 
       <div className="relative flex items-center justify-between px-6 py-2">
@@ -73,7 +85,11 @@ function UpgradeStatusTracker({ status }: { status: Booking["status"] }) {
                       : "bg-[#171c1f] border border-[#909097]/40"
                 }`}
               >
-                {isDone && <div className={`w-2 h-2 rounded-full ${isCurrent ? "bg-[#4cd7f6]" : "bg-[#0f1417]"}`} />}
+                {isDone && (
+                  <div
+                    className={`w-2 h-2 rounded-full ${isCurrent ? "bg-[#4cd7f6]" : "bg-[#0f1417]"}`}
+                  />
+                )}
               </div>
               <span
                 className={`font-mono text-[10px] font-bold tracking-widest ${
@@ -92,6 +108,7 @@ function UpgradeStatusTracker({ status }: { status: Booking["status"] }) {
 
 function PassengerConsole() {
   const allowed = useRequireRole("passenger");
+  const { user } = useAuth();
   const { state, book, cancel } = useRail();
   const [activeTab, setActiveTab] = useState<"search" | "bookings">("search");
   const [bookingFilter, setBookingFilter] = useState<"ALL" | "CONFIRMED" | "QUEUE">("ALL");
@@ -110,13 +127,19 @@ function PassengerConsole() {
     );
   }, [state.trains, query]);
 
-  const myBookings = state.bookings.filter((b) => b.status !== "CANCELLED");
+  const myBookings = useMemo(() => {
+    if (!user?.id) return [];
+    return state.bookings.filter(
+      (b) => b.status !== "CANCELLED" && b.userId === user.id,
+    );
+  }, [state.bookings, user?.id]);
   const confirmed = myBookings.filter((b) => b.status === "CONFIRMED").length;
   const queued = myBookings.length - confirmed;
 
   const filteredBookings = useMemo(() => {
     if (bookingFilter === "CONFIRMED") return myBookings.filter((b) => b.status === "CONFIRMED");
-    if (bookingFilter === "QUEUE") return myBookings.filter((b) => b.status === "RAC" || b.status === "WAITLIST");
+    if (bookingFilter === "QUEUE")
+      return myBookings.filter((b) => b.status === "RAC" || b.status === "WAITLIST");
     return myBookings;
   }, [myBookings, bookingFilter]);
 
@@ -169,11 +192,17 @@ function PassengerConsole() {
       </div>
 
       <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as any)} className="mt-8">
-        <TabsList className="bg-[#171c1f] border border-[#909097]/20 p-1 rounded-xl">
-          <TabsTrigger value="search" className="data-[state=active]:bg-[#4cd7f6] data-[state=active]:text-[#0f1417] font-bold text-xs rounded-lg">
+        <TabsList className="bg-card dark:bg-[#171c1f] border border-border dark:border-[#909097]/20 p-1 rounded-xl">
+          <TabsTrigger
+            value="search"
+            className="data-[state=active]:bg-[#0284c7] dark:data-[state=active]:bg-[#4cd7f6] data-[state=active]:text-white dark:data-[state=active]:text-[#0f1417] text-foreground dark:text-[#dfe3e7] font-bold text-xs rounded-lg"
+          >
             Search & Book
           </TabsTrigger>
-          <TabsTrigger value="bookings" className="data-[state=active]:bg-[#4cd7f6] data-[state=active]:text-[#0f1417] font-bold text-xs rounded-lg">
+          <TabsTrigger
+            value="bookings"
+            className="data-[state=active]:bg-[#0284c7] dark:data-[state=active]:bg-[#4cd7f6] data-[state=active]:text-white dark:data-[state=active]:text-[#0f1417] text-foreground dark:text-[#dfe3e7] font-bold text-xs rounded-lg"
+          >
             My Bookings ({myBookings.length})
           </TabsTrigger>
         </TabsList>
@@ -181,15 +210,18 @@ function PassengerConsole() {
         <TabsContent value="search" className="mt-6 space-y-5">
           <div className="flex flex-wrap items-center gap-3">
             <div className="relative flex-1">
-              <Search className="absolute top-1/2 left-3.5 size-4 -translate-y-1/2 text-[#909097]" />
+              <Search className="absolute top-1/2 left-3.5 size-4 -translate-y-1/2 text-muted-foreground dark:text-[#909097]" />
               <Input
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
                 placeholder="Search train name, code, or station..."
-                className="h-12 rounded-xl pl-10 bg-[#020617] border border-[#909097]/30 text-white font-medium focus:border-[#4cd7f6]"
+                className="h-12 rounded-xl pl-10 bg-card dark:bg-[#020617] border border-border dark:border-[#909097]/30 text-foreground dark:text-white font-medium focus:border-[#0284c7] dark:focus:border-[#4cd7f6] placeholder:text-muted-foreground"
               />
             </div>
-            <Button variant="outline" className="h-12 px-4 rounded-xl border-[#4cd7f6]/30 bg-[#171c1f] text-[#4cd7f6] font-mono text-xs font-bold uppercase gap-2">
+            <Button
+              variant="outline"
+              className="h-12 px-4 rounded-xl border-[#0284c7]/40 dark:border-[#4cd7f6]/30 bg-card dark:bg-[#171c1f] text-[#0284c7] dark:text-[#4cd7f6] font-mono text-xs font-bold uppercase gap-2"
+            >
               <SlidersHorizontal className="size-4" /> Filter
             </Button>
           </div>
@@ -209,22 +241,22 @@ function PassengerConsole() {
                   className="glass-card relative overflow-hidden rounded-2xl p-6 border border-[#4cd7f6]/20 glow-card"
                 >
                   {/* Top Bar Badges */}
-                  <div className="flex items-center justify-between mb-4 border-b border-[#909097]/15 pb-3">
+                  <div className="flex items-center justify-between mb-4 border-b border-border/40 dark:border-[#909097]/15 pb-3">
                     <div className="flex items-center gap-2">
-                      <Badge className="bg-[#4cd7f6]/20 text-[#4cd7f6] border border-[#4cd7f6]/30 font-mono text-[10px] uppercase">
+                      <Badge className="bg-[#0284c7]/15 dark:bg-[#4cd7f6]/20 text-[#0284c7] dark:text-[#4cd7f6] border border-[#0284c7]/30 dark:border-[#4cd7f6]/30 font-mono text-[10px] uppercase">
                         EXPRESS
                       </Badge>
-                      <span className="font-mono text-xs font-bold text-[#909097] tracking-wider">
+                      <span className="font-mono text-xs font-bold text-slate-700 dark:text-[#dfe3e7] tracking-wider">
                         {train.number} · {train.name}
                       </span>
                     </div>
 
                     <div className="flex items-center gap-2">
-                      <Badge className="bg-[#4cd7f6]/10 text-[#4cd7f6] text-[11px] font-bold">
+                      <Badge className="bg-[#0284c7]/15 dark:bg-[#4cd7f6]/10 text-[#0284c7] dark:text-[#4cd7f6] text-[11px] font-bold">
                         Seats: {c.seatsLeft}
                       </Badge>
                       {c.racLeft > 0 && (
-                        <Badge className="bg-amber-500/15 text-amber-300 text-[11px] font-bold">
+                        <Badge className="bg-amber-500/20 text-amber-800 dark:text-amber-300 text-[11px] font-bold">
                           RAC: {c.racLeft}
                         </Badge>
                       )}
@@ -235,37 +267,47 @@ function PassengerConsole() {
                   <div className="grid grid-cols-1 sm:grid-cols-3 items-center gap-4 py-2">
                     {/* Departure */}
                     <div>
-                      <span className="font-display text-3xl font-extrabold text-white">{train.departure}</span>
-                      <p className="font-mono text-xs text-[#909097] font-semibold mt-0.5">{train.from}</p>
+                      <span className="font-display text-3xl font-extrabold text-foreground dark:text-white">
+                        {train.departure}
+                      </span>
+                      <p className="font-mono text-xs text-slate-700 dark:text-[#909097] font-semibold mt-0.5">
+                        {train.from}
+                      </p>
                     </div>
 
                     {/* Duration Timeline */}
                     <div className="flex flex-col items-center justify-center px-2">
-                      <span className="font-mono text-[11px] text-[#4cd7f6] font-bold">
+                      <span className="font-mono text-[11px] text-[#0284c7] dark:text-[#4cd7f6] font-bold">
                         {train.duration || "4h 30m"}
                       </span>
                       <div className="w-full flex items-center gap-1 my-1">
-                        <div className="w-2 h-2 rounded-full bg-[#4cd7f6]" />
-                        <div className="flex-1 h-0.5 bg-gradient-to-r from-[#4cd7f6] to-[#03b5d3] opacity-60" />
-                        <div className="w-2 h-2 rounded-full bg-[#4cd7f6]" />
+                        <div className="w-2 h-2 rounded-full bg-[#0284c7] dark:bg-[#4cd7f6]" />
+                        <div className="flex-1 h-0.5 bg-gradient-to-r from-[#0284c7] dark:from-[#4cd7f6] to-[#03b5d3] opacity-60" />
+                        <div className="w-2 h-2 rounded-full bg-[#0284c7] dark:bg-[#4cd7f6]" />
                       </div>
-                      <span className="font-mono text-[10px] text-[#909097]">
+                      <span className="font-mono text-[10px] text-slate-600 dark:text-[#909097]">
                         {train.routeStops?.length || 2} Stops
                       </span>
                     </div>
 
                     {/* Arrival */}
                     <div className="sm:text-right">
-                      <span className="font-display text-3xl font-extrabold text-white">{train.arrival}</span>
-                      <p className="font-mono text-xs text-[#909097] font-semibold mt-0.5">{train.to}</p>
+                      <span className="font-display text-3xl font-extrabold text-foreground dark:text-white">
+                        {train.arrival}
+                      </span>
+                      <p className="font-mono text-xs text-slate-700 dark:text-[#909097] font-semibold mt-0.5">
+                        {train.to}
+                      </p>
                     </div>
                   </div>
 
                   {/* Footer Action Bar */}
-                  <div className="mt-5 pt-4 border-t border-[#909097]/15 flex items-center justify-between gap-4">
+                  <div className="mt-5 pt-4 border-t border-border/40 dark:border-[#909097]/15 flex items-center justify-between gap-4">
                     <div className="text-left">
-                      <span className="font-mono text-[10px] font-bold text-[#909097] uppercase block">Ticket Price</span>
-                      <span className="font-display text-2xl font-extrabold text-[#4cd7f6]">
+                      <span className="font-mono text-[10px] font-bold text-slate-700 dark:text-[#909097] uppercase block">
+                        Ticket Price
+                      </span>
+                      <span className="font-display text-2xl font-extrabold text-[#0284c7] dark:text-[#38bdf8]">
                         ₹{train.fare.toLocaleString("en-IN")}
                       </span>
                     </div>
@@ -278,9 +320,9 @@ function PassengerConsole() {
                           setDetailsTrain(train);
                           setDetailsOpen(true);
                         }}
-                        className="rounded-xl border-[#909097]/30 bg-[#171c1f] text-white font-bold hover:bg-[#171c1f]/80"
+                        className="rounded-xl border-border/80 dark:border-[#909097]/30 bg-card dark:bg-[#171c1f] text-foreground dark:text-white font-bold hover:bg-muted dark:hover:bg-[#171c1f]/80"
                       >
-                        <Navigation className="mr-1 size-3.5 text-[#4cd7f6]" /> Route
+                        <Navigation className="mr-1 size-3.5 text-[#0284c7] dark:text-[#4cd7f6]" /> Route
                       </Button>
 
                       <Button
@@ -289,7 +331,7 @@ function PassengerConsole() {
                           setSelected(train);
                           setOpen(true);
                         }}
-                        className="bg-[#4cd7f6] text-[#0f1417] font-extrabold rounded-xl px-5 h-10 glow-button hover:bg-[#4cd7f6]/90"
+                        className="bg-[#0284c7] dark:bg-[#4cd7f6] text-white dark:text-[#0f1417] font-extrabold rounded-xl px-5 h-10 glow-button hover:opacity-90"
                       >
                         <Ticket className="mr-1.5 size-4" /> BOOK TICKET
                       </Button>
@@ -311,7 +353,9 @@ function PassengerConsole() {
           {/* Quick Ticket Filter Pills */}
           <div className="flex flex-wrap items-center justify-between gap-3 glass-card p-3.5 rounded-xl border border-[#4cd7f6]/20">
             <div className="flex items-center gap-2">
-              <span className="font-mono text-xs font-bold text-[#909097] uppercase mr-1">Filter Tickets:</span>
+              <span className="font-mono text-xs font-bold text-[#909097] uppercase mr-1">
+                Filter Tickets:
+              </span>
               <Button
                 variant={bookingFilter === "ALL" ? "default" : "outline"}
                 size="sm"
@@ -392,50 +436,56 @@ function PassengerConsole() {
                     </div>
 
                     <div className="text-right font-mono">
-                      <span className="text-[10px] text-[#909097] block uppercase">PNR NUMBER</span>
-                      <span className="text-sm font-bold text-white tracking-widest">{b.pnr}</span>
+                      <span className="text-[10px] text-slate-700 dark:text-[#909097] block uppercase">PNR NUMBER</span>
+                      <span className="text-sm font-bold text-foreground dark:text-white tracking-widest">{b.pnr}</span>
                     </div>
                   </div>
 
                   {/* Pass Details Grid */}
                   <div className="grid grid-cols-2 sm:grid-cols-5 gap-4">
                     <div>
-                      <span className="font-mono text-[10px] font-bold uppercase text-[#909097] block">
+                      <span className="font-mono text-[10px] font-bold uppercase text-slate-700 dark:text-[#909097] block">
                         PASSENGER
                       </span>
-                      <span className="font-bold text-white text-base block mt-0.5">{b.passengerName}</span>
-                      <span className="font-mono text-xs text-[#909097]">{b.age} yrs · {b.gender}</span>
+                      <span className="font-bold text-foreground dark:text-white text-base block mt-0.5">
+                        {b.passengerName}
+                      </span>
+                      <span className="font-mono text-xs text-slate-600 dark:text-[#909097]">
+                        {b.age} yrs · {b.gender}
+                      </span>
                     </div>
 
                     <div>
-                      <span className="font-mono text-[10px] font-bold uppercase text-[#909097] block">
+                      <span className="font-mono text-[10px] font-bold uppercase text-slate-700 dark:text-[#909097] block">
                         TRAIN
                       </span>
-                      <span className="font-bold text-[#4cd7f6] text-base block mt-0.5">
+                      <span className="font-bold text-[#0284c7] dark:text-[#4cd7f6] text-base block mt-0.5 break-words line-clamp-2">
                         {train?.name ?? "Express"}
                       </span>
-                      <span className="font-mono text-xs text-[#909097]">{train?.number}</span>
+                      <span className="font-mono text-xs text-slate-600 dark:text-[#909097]">{train?.number}</span>
                     </div>
 
                     <div>
-                      <span className="font-mono text-[10px] font-bold uppercase text-[#909097] block">
+                      <span className="font-mono text-[10px] font-bold uppercase text-slate-700 dark:text-[#909097] block">
                         CLASS
                       </span>
-                      <span className="font-bold text-white text-base block mt-0.5">Executive AC</span>
-                      <span className="font-mono text-xs text-[#909097]">Standard 3A/CC</span>
+                      <span className="font-bold text-foreground dark:text-white text-base block mt-0.5">
+                        Executive AC
+                      </span>
+                      <span className="font-mono text-xs text-slate-600 dark:text-[#909097]">Standard 3A/CC</span>
                     </div>
 
                     <div>
-                      <span className="font-mono text-[10px] font-bold uppercase text-[#909097] block">
+                      <span className="font-mono text-[10px] font-bold uppercase text-slate-700 dark:text-[#909097] block">
                         STATUS
                       </span>
                       <Badge
                         className={`mt-1 font-mono text-xs font-bold ${
                           b.status === "CONFIRMED"
-                            ? "bg-[#4cd7f6]/20 text-[#4cd7f6] border border-[#4cd7f6]/40"
+                            ? "bg-[#0284c7]/15 dark:bg-[#4cd7f6]/20 text-[#0284c7] dark:text-[#4cd7f6] border border-[#0284c7]/30 dark:border-[#4cd7f6]/40"
                             : b.status === "RAC"
-                              ? "bg-amber-500/20 text-amber-300 border border-amber-500/40"
-                              : "bg-rose-500/20 text-rose-300 border border-rose-500/40"
+                              ? "bg-amber-500/20 text-amber-800 dark:text-amber-300 border border-amber-500/40"
+                              : "bg-rose-500/20 text-rose-800 dark:text-rose-300 border border-rose-500/40"
                         }`}
                       >
                         {b.status}
@@ -443,10 +493,10 @@ function PassengerConsole() {
                     </div>
 
                     <div>
-                      <span className="font-mono text-[10px] font-bold uppercase text-[#909097] block">
+                      <span className="font-mono text-[10px] font-bold uppercase text-slate-700 dark:text-[#909097] block">
                         BERTH / SEAT
                       </span>
-                      <span className="font-bold text-[#4cd7f6] text-base block mt-0.5">
+                      <span className="font-bold text-[#0284c7] dark:text-[#4cd7f6] text-base block mt-0.5">
                         {b.status === "CONFIRMED"
                           ? `Seat ${b.seatNumber} (${b.berth})`
                           : `Queue #${b.queuePosition} (${b.preference})`}
@@ -455,33 +505,52 @@ function PassengerConsole() {
                   </div>
 
                   {/* Route & Journey Footer */}
-                  <div className="mt-6 pt-4 border-t border-[#909097]/20 flex flex-wrap items-center justify-between gap-4">
-                    <div className="font-mono text-xs text-[#dfe3e7]">
+                  <div className="mt-6 pt-4 border-t border-border/40 dark:border-[#909097]/20 flex flex-wrap items-center justify-between gap-4">
+                    <div className="font-mono text-xs text-foreground dark:text-[#dfe3e7]">
                       📍 {b.fromStation || train?.from} → {b.toStation || train?.to}
-                      {b.journeyDate && <span className="text-[#4cd7f6] ml-2">· {formatJourneyDate(b.journeyDate)}</span>}
+                      {b.journeyDate && (
+                        <span className="text-[#0284c7] dark:text-[#4cd7f6] ml-2">
+                          · {formatJourneyDate(b.journeyDate)}
+                        </span>
+                      )}
                     </div>
 
                     <div className="flex items-center gap-4">
                       <div className="text-right">
-                        <span className="font-mono text-[10px] text-[#909097] block uppercase">TOTAL FARE</span>
-                        <span className="font-display font-extrabold text-xl text-white">
+                        <span className="font-mono text-[10px] text-slate-700 dark:text-[#909097] block uppercase">
+                          TOTAL FARE
+                        </span>
+                        <span className="font-display font-extrabold text-xl text-[#0284c7] dark:text-[#38bdf8]">
                           ₹{b.fare.toLocaleString("en-IN")}
                         </span>
                       </div>
 
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="border-rose-500/30 text-rose-400 hover:bg-rose-500/10 font-bold rounded-xl"
-                        onClick={async () => {
-                          await cancel(b.id);
-                          toast.success("Ticket cancelled", {
-                            description: "RAC and waitlist queue promoted.",
-                          });
-                        }}
-                      >
-                        <Trash2 className="mr-1.5 size-3.5" /> Cancel Ticket
-                      </Button>
+                      <div className="flex items-center gap-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="border-[#0284c7]/40 dark:border-[#4cd7f6]/40 text-[#0284c7] dark:text-[#4cd7f6] hover:bg-[#0284c7]/10 dark:hover:bg-[#4cd7f6]/10 font-bold rounded-xl"
+                          onClick={() => {
+                            downloadTicketPDF({ booking: b, train });
+                          }}
+                        >
+                          <FileDown className="mr-1.5 size-3.5" /> Download Ticket PDF
+                        </Button>
+
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="border-rose-500/30 text-rose-400 hover:bg-rose-500/10 font-bold rounded-xl"
+                          onClick={async () => {
+                            await cancel(b.id);
+                            toast.success("Ticket cancelled", {
+                              description: "RAC and waitlist queue promoted.",
+                            });
+                          }}
+                        >
+                          <Trash2 className="mr-1.5 size-3.5" /> Cancel Ticket
+                        </Button>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -511,5 +580,3 @@ function PassengerConsole() {
     </ConsoleShell>
   );
 }
-
-

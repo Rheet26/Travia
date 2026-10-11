@@ -77,14 +77,7 @@ export function AnimatedTrainBackdrop() {
         if (w.x > width + 20) w.x = -20;
 
         const glowRadius = w.size * 3.5;
-        const gradient = ctx.createRadialGradient(
-          w.x,
-          w.y,
-          0,
-          w.x,
-          w.y,
-          glowRadius
-        );
+        const gradient = ctx.createRadialGradient(w.x, w.y, 0, w.x, w.y, glowRadius);
         gradient.addColorStop(0, `rgba(76, 215, 246, ${currentAlpha})`);
         gradient.addColorStop(0.5, `rgba(6, 182, 212, ${currentAlpha * 0.4})`);
         gradient.addColorStop(1, "rgba(6, 182, 212, 0)");
@@ -113,10 +106,10 @@ export function AnimatedTrainBackdrop() {
 
   return (
     <div
-      className="fixed inset-0 pointer-events-none z-0 overflow-hidden bg-[#0F172A]"
+      className="fixed inset-0 pointer-events-none z-0 overflow-hidden bg-background dark:bg-[#0F172A] transition-colors duration-200"
       style={{ perspective: "1000px" }}
     >
-      {/* Vande Bharat Hero Background (CONSTANT SCALE - No Scroll Zoom!) */}
+      {/* Vande Bharat Hero Background */}
       <motion.div
         animate={{
           rotateX: mousePos.y * -1.5,
@@ -128,12 +121,12 @@ export function AnimatedTrainBackdrop() {
         <img
           src="/vande-bharat-hero.jpg"
           alt="Vande Bharat Express Hero Backdrop"
-          className="w-full h-full object-cover object-center filter contrast-110 brightness-95"
+          className="w-full h-full object-cover object-center filter contrast-110 brightness-95 opacity-20 dark:opacity-100 transition-opacity duration-200"
         />
       </motion.div>
 
-      {/* Atmospheric Deep Navy (#0F172A) & Cyan (#06B6D4) Gradient Overlays */}
-      <div className="absolute inset-0 bg-gradient-to-b from-[#0F172A]/70 via-[#0F172A]/40 to-[#0F172A]/85 pointer-events-none" />
+      {/* Atmospheric Gradient Overlays */}
+      <div className="absolute inset-0 bg-gradient-to-b from-background/95 via-background/85 to-background/95 dark:from-[#0F172A]/70 dark:via-[#0F172A]/40 dark:to-[#0F172A]/85 pointer-events-none transition-colors duration-200" />
       <div className="absolute top-0 right-0 w-[900px] h-[650px] bg-gradient-to-b from-[#06B6D4]/20 via-[#06B6D4]/5 to-transparent rounded-full blur-3xl opacity-70 pointer-events-none" />
       <div className="absolute bottom-0 left-0 w-[800px] h-[550px] bg-[#06B6D4]/10 rounded-full blur-3xl pointer-events-none" />
 
@@ -145,4 +138,3 @@ export function AnimatedTrainBackdrop() {
     </div>
   );
 }
-

@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { BrandMark } from "@/components/railverse/shell";
+import { ThemeToggle } from "@/components/railverse/theme-toggle";
 import { useAuth } from "@/lib/railverse/auth";
 import type { Role } from "@/lib/railverse/auth";
 
@@ -14,20 +15,20 @@ type LoginSearch = { mode: "login" | "signup" };
 
 export const Route = createFileRoute("/login/$role")({
   validateSearch: (search: Record<string, unknown>): LoginSearch => ({
-    mode: search['mode'] === "signup" ? "signup" : "login",
+    mode: search["mode"] === "signup" ? "signup" : "login",
   }),
   head: () => ({
     meta: [
-      { title: "Sign In — RailVerse" },
+      { title: "Sign In — Travia" },
       {
         name: "description",
         content:
-          "Sign in or create a RailVerse account as a passenger or admin to reach your reservation console.",
+          "Sign in or create a Travia account as a passenger or admin to reach your reservation console.",
       },
-      { property: "og:title", content: "Sign In — RailVerse" },
+      { property: "og:title", content: "Sign In — Travia" },
       {
         property: "og:description",
-        content: "Access your RailVerse passenger or admin console.",
+        content: "Access your Travia passenger or admin console.",
       },
     ],
   }),
@@ -85,7 +86,8 @@ function AuthForm() {
       <header className="sticky top-0 z-30 border-b border-border/60 bg-background/80 backdrop-blur-xl">
         <div className="mx-auto flex max-w-6xl items-center gap-4 px-4 py-4 sm:px-6">
           <BrandMark />
-          <div className="ml-auto">
+          <div className="ml-auto flex items-center gap-3">
+            <ThemeToggle />
             <Button asChild variant="ghost">
               <Link to="/auth" search={{ mode }}>
                 Change role
@@ -147,16 +149,12 @@ function AuthForm() {
               />
             </div>
             <Button type="submit" size="lg" className="w-full" disabled={submitting}>
-              {submitting
-                ? "Processing..."
-                : mode === "signup"
-                  ? "Create account"
-                  : "Login"}
+              {submitting ? "Processing..." : mode === "signup" ? "Create account" : "Login"}
             </Button>
           </form>
 
           <p className="mt-5 text-center text-sm text-muted-foreground">
-            {mode === "signup" ? "Already registered?" : "New to RailVerse?"}{" "}
+            {mode === "signup" ? "Already registered?" : "New to Travia?"}{" "}
             <button
               type="button"
               onClick={() => setMode(mode === "signup" ? "login" : "signup")}

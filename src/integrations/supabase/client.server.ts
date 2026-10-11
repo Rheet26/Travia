@@ -2,17 +2,17 @@
 // Server-side Supabase client with service role key - bypasses RLS.
 // Use this for admin operations in server functions and server routes only.
 // For user-authenticated queries (with RLS), use the auth middleware instead.
-import { createClient } from '@supabase/supabase-js';
-import type { Database } from './types';
+import { createClient } from "@supabase/supabase-js";
+import type { Database } from "./types";
 
 function isNewSupabaseApiKey(value: string): boolean {
-  return value.startsWith('sb_publishable_') || value.startsWith('sb_secret_');
+  return value.startsWith("sb_publishable_") || value.startsWith("sb_secret_");
 }
 
 function createSupabaseFetch(supabaseKey: string): typeof fetch {
   return (input, init) => {
     const headers = new Headers(
-      typeof Request !== 'undefined' && input instanceof Request ? input.headers : undefined,
+      typeof Request !== "undefined" && input instanceof Request ? input.headers : undefined,
     );
 
     if (init?.headers) {
@@ -20,41 +20,41 @@ function createSupabaseFetch(supabaseKey: string): typeof fetch {
     }
 
     // New Supabase API keys are opaque strings, not bearer JWTs.
-    const authHeader = headers.get('Authorization') || headers.get('authorization');
+    const authHeader = headers.get("Authorization") || headers.get("authorization");
     if (isNewSupabaseApiKey(supabaseKey) && authHeader?.trim() === `Bearer ${supabaseKey}`) {
-      headers.delete('Authorization');
-      headers.delete('authorization');
+      headers.delete("Authorization");
+      headers.delete("authorization");
     }
 
-    headers.set('apikey', supabaseKey);
+    headers.set("apikey", supabaseKey);
     return fetch(input, { ...init, headers });
   };
 }
 
 function createSupabaseAdminClient() {
-  const env = typeof import.meta !== 'undefined' ? import.meta.env : undefined;
-  const procEnv = typeof process !== 'undefined' ? process.env : undefined;
+  const env = typeof import.meta !== "undefined" ? import.meta.env : undefined;
+  const procEnv = typeof process !== "undefined" ? process.env : undefined;
 
   const SUPABASE_URL =
-    procEnv?.['SUPABASE_URL'] ||
-    procEnv?.['VITE_SUPABASE_URL'] ||
-    env?.['VITE_SUPABASE_URL'];
+    procEnv?.["SUPABASE_URL"] || procEnv?.["VITE_SUPABASE_URL"] || env?.["VITE_SUPABASE_URL"];
 
   const SUPABASE_SERVICE_ROLE_KEY =
-    procEnv?.['SUPABASE_SERVICE_ROLE_KEY'] ||
-    procEnv?.['SUPABASE_PUBLISHABLE_KEY'] ||
-    procEnv?.['SUPABASE_ANON_KEY'] ||
-    procEnv?.['VITE_SUPABASE_PUBLISHABLE_KEY'] ||
-    procEnv?.['VITE_SUPABASE_ANON_KEY'] ||
-    env?.['VITE_SUPABASE_PUBLISHABLE_KEY'] ||
-    env?.['VITE_SUPABASE_ANON_KEY'];
+    procEnv?.["SUPABASE_SERVICE_ROLE_KEY"] ||
+    procEnv?.["SUPABASE_PUBLISHABLE_KEY"] ||
+    procEnv?.["SUPABASE_ANON_KEY"] ||
+    procEnv?.["VITE_SUPABASE_PUBLISHABLE_KEY"] ||
+    procEnv?.["VITE_SUPABASE_ANON_KEY"] ||
+    env?.["VITE_SUPABASE_PUBLISHABLE_KEY"] ||
+    env?.["VITE_SUPABASE_ANON_KEY"];
 
   if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) {
     const missing = [
-      ...(!SUPABASE_URL ? ['SUPABASE_URL / VITE_SUPABASE_URL'] : []),
-      ...(!SUPABASE_SERVICE_ROLE_KEY ? ['SUPABASE_SERVICE_ROLE_KEY / SUPABASE_PUBLISHABLE_KEY'] : []),
+      ...(!SUPABASE_URL ? ["SUPABASE_URL / VITE_SUPABASE_URL"] : []),
+      ...(!SUPABASE_SERVICE_ROLE_KEY
+        ? ["SUPABASE_SERVICE_ROLE_KEY / SUPABASE_PUBLISHABLE_KEY"]
+        : []),
     ];
-    const message = `Missing Supabase environment variable(s): ${missing.join(', ')}. Ensure .env or .env.local is properly configured.`;
+    const message = `Missing Supabase environment variable(s): ${missing.join(", ")}. Ensure .env or .env.local is properly configured.`;
     console.error(`[Supabase] ${message}`);
     throw new Error(message);
   }
@@ -67,7 +67,7 @@ function createSupabaseAdminClient() {
       storage: undefined,
       persistSession: false,
       autoRefreshToken: false,
-    }
+    },
   });
 }
 

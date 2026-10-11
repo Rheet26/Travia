@@ -258,6 +258,12 @@ CREATE POLICY "Users can update own bookings or Admins update all" ON public.boo
     auth.uid() = user_id OR EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND role = 'ADMIN')
   );
 
+DROP POLICY IF EXISTS "Users can delete own bookings or Admins delete all" ON public.bookings;
+CREATE POLICY "Users can delete own bookings or Admins delete all" ON public.bookings
+  FOR DELETE USING (
+    auth.uid() = user_id OR EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND role = 'ADMIN')
+  );
+
 -- 10. Passengers Table
 CREATE TABLE IF NOT EXISTS public.passengers (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),

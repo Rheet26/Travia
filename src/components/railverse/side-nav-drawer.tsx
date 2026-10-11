@@ -16,14 +16,9 @@ import {
 } from "lucide-react";
 import { useAuth } from "@/lib/railverse/auth";
 import { Button } from "@/components/ui/button";
+import { ThemeToggle } from "@/components/railverse/theme-toggle";
 
-export function SideNavDrawer({
-  open,
-  onClose,
-}: {
-  open: boolean;
-  onClose: () => void;
-}) {
+export function SideNavDrawer({ open, onClose }: { open: boolean; onClose: () => void }) {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
 
@@ -81,11 +76,11 @@ export function SideNavDrawer({
             animate={{ x: 0 }}
             exit={{ x: "-100%" }}
             transition={{ type: "spring", stiffness: 300, damping: 30 }}
-            className="fixed inset-y-0 left-0 z-50 w-full max-w-sm bg-[#0f1417] text-[#dfe3e7] border-r border-[#4cd7f6]/30 shadow-[0_0_40px_rgba(76,215,246,0.2)] flex flex-col justify-between p-6 overflow-y-auto"
+            className="fixed inset-y-0 left-0 z-50 w-full max-w-sm bg-card dark:bg-[#0f1417] text-card-foreground dark:text-[#dfe3e7] border-r border-border/50 dark:border-[#4cd7f6]/30 shadow-[0_0_40px_rgba(76,215,246,0.2)] flex flex-col justify-between p-6 overflow-y-auto"
           >
             <div>
               {/* Drawer Top Header */}
-              <div className="flex items-center justify-between border-b border-[#909097]/20 pb-5">
+              <div className="flex items-center justify-between border-b border-border/40 dark:border-[#909097]/20 pb-5">
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#4cd7f6] to-[#03b5d3] text-[#0f1417] flex items-center justify-center shadow-[0_0_15px_rgba(76,215,246,0.4)]">
                     <TrainFront className="size-6 font-bold" />
@@ -94,20 +89,23 @@ export function SideNavDrawer({
                     <span className="font-display text-2xl font-extrabold tracking-tighter text-[#4cd7f6] block drop-shadow-[0_0_10px_rgba(76,215,246,0.3)]">
                       TRAVIA
                     </span>
-                    <span className="text-[10px] font-mono font-semibold tracking-[0.2em] text-[#909097] uppercase -mt-1 block">
+                    <span className="text-[10px] font-mono font-semibold tracking-[0.2em] text-muted-foreground dark:text-[#909097] uppercase -mt-1 block">
                       PREMIUM RAIL
                     </span>
                   </div>
                 </div>
 
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={onClose}
-                  className="rounded-full text-[#909097] hover:text-white hover:bg-[#171c1f]"
-                >
-                  <X className="size-5" />
-                </Button>
+                <div className="flex items-center gap-2">
+                  <ThemeToggle />
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={onClose}
+                    className="rounded-full text-muted-foreground dark:text-[#909097] hover:text-foreground dark:hover:text-white hover:bg-muted dark:hover:bg-[#171c1f]"
+                  >
+                    <X className="size-5" />
+                  </Button>
+                </div>
               </div>
 
               {/* User Quick Account Badge */}
@@ -115,17 +113,17 @@ export function SideNavDrawer({
                 <div className="mt-5 glass-card rounded-xl p-3.5 border border-[#4cd7f6]/30 flex items-center justify-between">
                   <div className="flex items-center gap-3">
                     <div className="w-9 h-9 rounded-full bg-[#4cd7f6]/20 text-[#4cd7f6] flex items-center justify-center font-bold text-sm">
-                      {user.name ? user.name[0].toUpperCase() : "U"}
+                      {user.name && user.name[0] ? user.name[0].toUpperCase() : "U"}
                     </div>
                     <div>
-                      <p className="text-xs font-bold text-white">{user.name}</p>
+                      <p className="text-xs font-bold text-foreground dark:text-white">{user.name}</p>
                       <p className="text-[10px] font-mono uppercase text-[#4cd7f6]">{user.role}</p>
                     </div>
                   </div>
                   <Button
                     variant="ghost"
                     size="sm"
-                    className="text-rose-400 hover:text-rose-300 hover:bg-rose-500/10 text-xs font-bold px-2.5 h-8"
+                    className="text-rose-500 dark:text-rose-400 hover:bg-rose-500/10 text-xs font-bold px-2.5 h-8"
                     onClick={() => {
                       logout();
                       onClose();
@@ -136,7 +134,7 @@ export function SideNavDrawer({
                   </Button>
                 </div>
               ) : (
-                <div className="mt-5 rounded-xl border border-[#4cd7f6]/20 bg-[#171c1f]/80 p-3 flex items-center justify-between text-xs text-[#909097]">
+                <div className="mt-5 rounded-xl border border-[#4cd7f6]/20 bg-muted/80 dark:bg-[#171c1f]/80 p-3 flex items-center justify-between text-xs text-muted-foreground dark:text-[#909097]">
                   <span className="flex items-center gap-1.5 text-[#4cd7f6] font-mono font-bold">
                     <Sparkles className="size-3.5" /> Guest Explorer
                   </span>
@@ -146,7 +144,7 @@ export function SideNavDrawer({
 
               {/* Navigation Menu List */}
               <div className="mt-6 space-y-2">
-                <span className="font-mono text-[11px] font-bold tracking-widest text-[#909097] uppercase px-1 block mb-3">
+                <span className="font-mono text-[11px] font-bold tracking-widest text-muted-foreground dark:text-[#909097] uppercase px-1 block mb-3">
                   System Navigation
                 </span>
 
@@ -156,24 +154,24 @@ export function SideNavDrawer({
                     <Link
                       key={item.label}
                       to={item.to as any}
-                      search={item.search}
+                      search={item.search as any}
                       onClick={onClose}
-                      className="group flex items-center justify-between p-3 rounded-xl border border-transparent hover:border-[#4cd7f6]/40 hover:bg-[#171c1f] transition-all"
+                      className="group flex items-center justify-between p-3 rounded-xl border border-transparent hover:border-[#4cd7f6]/40 hover:bg-muted dark:hover:bg-[#171c1f] transition-all"
                     >
                       <div className="flex items-center gap-3">
                         <div className="w-9 h-9 rounded-lg bg-[#4cd7f6]/10 text-[#4cd7f6] group-hover:bg-[#4cd7f6] group-hover:text-[#0f1417] flex items-center justify-center transition-colors">
                           <Icon className="size-4" />
                         </div>
                         <div>
-                          <p className="text-sm font-bold text-white group-hover:text-[#4cd7f6] transition-colors">
+                          <p className="text-sm font-bold text-foreground dark:text-white group-hover:text-[#4cd7f6] transition-colors">
                             {item.label}
                           </p>
-                          <p className="text-[11px] text-[#909097] font-medium">
+                          <p className="text-[11px] text-muted-foreground dark:text-[#909097] font-medium">
                             {item.description}
                           </p>
                         </div>
                       </div>
-                      <ChevronRight className="size-4 text-[#909097] group-hover:text-[#4cd7f6] group-hover:translate-x-1 transition-all" />
+                      <ChevronRight className="size-4 text-muted-foreground dark:text-[#909097] group-hover:text-[#4cd7f6] group-hover:translate-x-1 transition-all" />
                     </Link>
                   );
                 })}

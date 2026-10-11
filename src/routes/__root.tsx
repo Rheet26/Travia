@@ -11,10 +11,10 @@ import { useEffect, type ReactNode } from "react";
 
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
+import { ThemeProvider } from "../lib/railverse/theme-context";
 import { RailProvider } from "../lib/railverse/store";
 import { AuthProvider } from "../lib/railverse/auth";
 import { Toaster } from "../components/ui/sonner";
-
 
 function NotFoundComponent() {
   return (
@@ -81,14 +81,14 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "RailVerse — Seat, RAC & Waitlist Reservation Suite" },
+      { title: "Travia — Smart Railway Seat Allocation & Waitlist Optimizer" },
       {
         name: "description",
         content:
-          "RailVerse is a modern Indian Railways reservation platform with live seat allocation, RAC and waitlist queues, and an admin console.",
+          "Travia is a modern Indian Railways reservation platform with live seat allocation, RAC and waitlist queues, and an admin console.",
       },
-      { name: "author", content: "RailVerse" },
-      { property: "og:title", content: "RailVerse — Railway Reservation Suite" },
+      { name: "author", content: "Travia" },
+      { property: "og:title", content: "Travia — Smart Railway Seat Allocation & Waitlist Optimizer" },
       {
         property: "og:description",
         content:
@@ -118,7 +118,6 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
   errorComponent: ErrorComponent,
 });
 
-
 function RootShell({ children }: { children: ReactNode }) {
   return (
     <html lang="en">
@@ -138,14 +137,15 @@ function RootComponent() {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <AuthProvider>
-        <RailProvider>
-          {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
-          <Outlet />
-          <Toaster position="top-right" richColors />
-        </RailProvider>
-      </AuthProvider>
+      <ThemeProvider>
+        <AuthProvider>
+          <RailProvider>
+            {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
+            <Outlet />
+            <Toaster position="top-right" richColors />
+          </RailProvider>
+        </AuthProvider>
+      </ThemeProvider>
     </QueryClientProvider>
-
   );
 }
